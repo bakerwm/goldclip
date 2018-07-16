@@ -14,7 +14,7 @@ from goldclip.goldcliplib.demx import *
 from goldclip.goldcliplib.trim import *
 from goldclip.goldcliplib.map import *
 from goldclip.goldcliplib.peak import *
-
+from goldclip.goldcliplib.rtstop import *
 
 
 class Demx:
@@ -172,5 +172,24 @@ class Peak:
         return peak_files
 
 
+class Rtstop:
+    """
+    call RT-stops from BAM files
+    """
+    def __init__(self, *args, **kwargs):
+        self.kwargs = kwargs
+
+    def run(self):
+        logging.info('RTStop-calling start')
+        bed_files = [f.name for f in self.kwargs['i']]
+        path_out = self.kwargs['o']
+        smp_name = self.kwargs['n']
+        threshold = self.kwargs['t']
+        intersect = self.kwargs['c']
+        overwrite = self.kwargs['f']
+        tmp = call_rtstop(bed_files, path_out, smp_name, threshold,
+                          intersect, overwrite)
+        logging.info('RTstop-calling finish')
+        return tmp
 
 

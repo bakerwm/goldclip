@@ -14,6 +14,7 @@ import multiprocessing as mp
 import numpy as np
 import pysam
 import subprocess
+import goldclip
 from goldclip.helper import *
 
 

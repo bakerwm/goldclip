@@ -176,7 +176,22 @@ def add_rtstop_args(parser):
     """
     call RT-Stops
     """
-    pass
+    parser.add_argument('-i', nargs = '+', required = True, metavar = 'BED', 
+        type = argparse.FileType('r'),
+        help = 'BED files to call RTStops, 1-4 files.')
+    parser.add_argument('-n', required = True, metavar = 'name',
+        help = 'Name of the experiment')
+    parser.add_argument('-o', required = False, default = None, 
+        metavar = 'output',  help = 'The directory to save results.')
+    parser.add_argument('-t', required = False, default = 1, 
+        choices = list(range(1, 4)), metavar = 'threshold', type = int, 
+        help = 'The threshold to filt RTStops, default [1].')
+    parser.add_argument('-c', required = False, default = 0, choices = [0, 1], 
+        metavar = 'intersect', type = int,
+        help = 'how to merge 0=union, 1=intersect, default [0]')
+    parser.add_argument('-f', required = False, action = "store_true",
+        help = 'Overwrite the output files if exist')
+    return parser
 
 
 
