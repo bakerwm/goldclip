@@ -13,6 +13,7 @@ __version__ = '0.0.1'
 from goldclip.goldcliplib.demx import *
 from goldclip.goldcliplib.trim import *
 from goldclip.goldcliplib.map import *
+from goldclip.goldcliplib.peak import *
 
 
 
@@ -135,17 +136,41 @@ class Map:
         self.kwargs = kwargs
 
 
-    def run():
+    def run(self):
+        logging.info('mapping files')
         fqs = [f.name for f in self.kwargs['i']]
-        out_path = self.kwargs['o']
-        genome = self.kwargs['g']
-        genome_index = self.kwargs['x']
         smp_name = self.kwargs['n']
+        path_out = self.kwargs['o']
+        genome = self.kwargs['g']
+        spikein = self.kwargs['k']
         multi_cores = self.kwargs['threads']
         aligner = self.kwargs['aligner']
+        path_data = self.kwargs['path_data']
+        overwrite = self.kwargs['overwrite']
+        tmp = map(fqs, smp_name, path_out, genome, spikein, 
+                     multi_cores=multi_cores, aligner=aligner,
+                     path_data=path_data, overwrite=overwrite)
+        logging.info('mapping finish!')
+        return tmp[0]
 
-        tmp = map_se(fqs, smp_name, out_path, genome, spikein, genome_index,
-                      multi_cores)
+
+class Peak:
+    """
+    call peaks using CLIPper, pyicoclip
+    """
+    def __init__(self, *args, **kwargs):
+        self.kwargs = kwargs
+
+    def run(self):
+        logging.info('peak-calling start')
+        bam_files = [f.name for f in self.kwargs['i']]
+        genome = self.kwargs['g']
+        path_out = self.kwargs['o']
+        tool = self.kwargs['tool']
+        peak_files = call_peak(genome, bam_files, path_out, tool)
+        logging.info('peak-calling finish')
+        return peak_files
+
 
 
 

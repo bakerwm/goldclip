@@ -59,7 +59,6 @@ def add_demx_args(parser):
         help = 'if specified, cut the barcode from read')
     parser.add_argument('--bioawk', action='store_true',
         help='use bioawk to demulplex, only support one read')
-
     return parser
 
 
@@ -113,8 +112,8 @@ def add_trim_args(parser):
     parser.add_argument('--threads', default=1, 
         metavar='threads', type=int,
         help='Number of threads to launch, default [1]')
-
     return parser
+
 
 
 def add_map_args(parser):
@@ -128,19 +127,25 @@ def add_map_args(parser):
     parser.add_argument('-n', required=True, metavar='NAME',
         help='Name of the experiment')
     parser.add_argument('-o', default=None, 
-        metavar='OUTPUT',  help='The directory to save results.')
-    parser.add_argument('-g', default='hg19', 
+        metavar='OUTPUT',  help='The directory to save results, default, \
+        the same as input fastq files.')
+    parser.add_argument('-g', required=True, default='hg19', 
         metavar='GENOME', choices=['dm3', 'hg19', 'hg38', 'mm10'],
-        help='Reference genome : dm3, hg19, GRCh38, mm10, GRCm38')
+        help='Reference genome : dm3, hg19, hg39, mm10, default: hg19')
     parser.add_argument('-k', default='hg19', 
         metavar='Spike-in', choices=['dm3', 'hg19', 'hg38', 'mm10'],
-        help='Spike-in genome : dm3, hg19, hg38, mm10')
+        help='Spike-in genome : dm3, hg19, hg38, mm10, default: None')
     parser.add_argument('--threads', default=1, 
         metavar='THREADS', type=int, 
-        help='Number of threads to launch, default [1].')
+        help='Number of threads to launch, default: 1.')
     parser.add_argument('--aligner', default='bowtie', 
         choices=['bowtie', 'bowtie2', 'star'],
         help='Choose which aligner to use. default: bowtie')
+    parser.add_argument('--path_data', 
+        help='The directory of genome files, default: \
+        [$HOME/data/genome/]')
+    parser.add_argument('--overwrite', action='store_true',
+        help='if spcified, overwrite exists file')
     return parser
 
 
@@ -149,23 +154,20 @@ def add_peak_args(parser):
     """
     call peaks using clipper, pyicoclip
     """
-    parser.add_argument('-tool', required=True, metavar='TOOL', 
+    parser.add_argument('--tool', required=True, metavar='TOOL', 
         choices=['clipper', 'pyicoclip'], 
         help='Peak-caller, clipper|pyicoclip')
     parser.add_argument('-i', nargs='+', required=True, metavar='BAM', 
         type=argparse.FileType('r'),
-        help='mapped BAM files, sorted, 1-4 files.')
-    parser.add_argument('-n', required=True, metavar='NAME',
-        help='Name of the experiment')
-    parser.add_argument('-g', default='GRCh38', 
-        metavar='GENOME', choices=['dm3', 'hg19', 'GRCh38', 'mm10', 'GRCm38'],
-        help='Reference genome : hg19, GRCh38, mm10, GRCm38')
+        help='BAM files, sorted, 1-4 files.')
+    parser.add_argument('-g', default='hg19', 
+        metavar='GENOME', choices=['dm3', 'hg19', 'hg38', 'mm10'],
+        help='Reference genome, support: dm3, hg19, hg38, mm10, default: hg19')
     parser.add_argument('-o', default=None, 
         metavar='OUTPUT', help='The directory to save results.')
     parser.add_argument('--threads', default=1, 
         metavar='THREAD', type=int,
-        help='Number of threads to launch, default [1].')
-
+        help='Number of threads to launch, default 1.')
     return parser
 
 
