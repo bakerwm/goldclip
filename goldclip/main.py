@@ -27,17 +27,15 @@ subparsers.required = True
 
 subparser_demx = subparsers.add_parser('demx', help='demultiplexing illumina reads.')
 subparser_demx = add_demx_args(subparser_demx)
-
 subparser_trim = subparsers.add_parser('trim', help='trimming reads.')
 subparser_trim = add_trim_args(subparser_trim)
-
 subparser_map = subparsers.add_parser('map', help='mapping reads to reference.')
 subparser_map = add_map_args(subparser_map)
-
-subparser_peak = subparsers.add_parser('count', help='calling peaks.')
+subparser_peak = subparsers.add_parser('peak', help='calling peaks.')
 subparser_peak = add_peak_args(subparser_peak)
-
-subparser_report = subparsers.add_parser('diff', help='making a report for the project.')
+subparser_rtstop = subparsers.add_parser('rtstop', help='calling RT-Stops.')
+subparser_rtstop = add_peak_args(subparser_rtstop)
+subparser_report = subparsers.add_parser('report', help='making a report for the project.')
 subparser_report = add_report_args(subparser_report)
 
 

@@ -214,11 +214,15 @@ def rm_suffix1(fn):
     from: {name}.not_{}.not_{}.....map_{}
     to: {name}
     """
-    p = os.path.splitext(fn)[0]
-    px = os.path.splitext(fn)[1]
-    if px.startswith('.not_') or px.startswith('.map_'):
-        fn = p
-    return filename_shorter(fn)
+    if '.' in fn:
+        p = os.path.splitext(fn)[0]
+        px = os.path.splitext(fn)[1]
+        if px.startswith('.not_') or px.startswith('.map_'):
+            return rm_suffix1(p)
+        else:
+            return fn
+    else:
+        return fn
 
 
 def filename_shorter(fn, with_path=False):
@@ -388,60 +392,6 @@ def bam2bw(genome, pathout, bam, strandness = True, binsize = 1):
             #os.system(c1)
 
 
-class genome_info():
-    # genome data_dir
-    def __init__(self, genome, genome_path = '/data/genome'):
-        genome_path = os.path.join(genome_path, genome)
-        self.genome_fa = os.path.join(genome_path, 'bigZips', genome + '.fa')
-        self.genome_fa_size = os.path.join(genome_path, 'bigZips', genome + '.chrom.sizes')
-        self.bowtie_index = os.path.join(genome_path, 'bowtie_index', 'genome')
-        self.bowtie2_index = os.path.join(genome_path, 'bwotie2_index', 'genome')
-        self.hisat2_index = os.path.join(genome_path, 'hisat2_index', 'genome')
-        self.star_index = os.path.join(genome_path, 'STAR_index')
-        self.phylop_100 = os.path.join(genome_path, 'phyloP100way', genome + '.100way.phyloP100way.bw')
-        self.gene_bed = os.path.join(genome_path, 'annotation_and_repeats', genome + '.refseq.bed')
-        self.rmsk_bed = os.path.join(genome_path, 'annotation_and_repeats', genome + '.rmsk.bed')
-
-    def get_fa(self):
-        assert os.path.exists(self.genome_fa)
-        return self.genome_fa
-
-    def get_fasize(self):
-        assert os.path.exists(self.genome_fa_size)
-        return self.genome_fa_size
-
-    def get_bowtie_index(self):
-        assert os.path.exists(self.bowtie_index + ".1.ebwt")
-        return self.bowtie_index
-
-    def get_bowtie2_index(self):
-        assert os.path.exists(self.bowtie_index + ".1.bt2")
-        return self.bowtie2_index
-
-    def get_hisat2_index(self):
-        assert os.path.exists(self.bowtie_index + ".1.ht2")
-        return self.hisat2_index
-
-    def get_star_index(self):
-        assert os.path.exists(os.path.join(self.bowtie_index, "Genome"))
-        return self.star_index
-
-    def get_phylop100(self):
-        assert os.path.exists(self.bowtie_index)
-        return self.phylop100
-
-    def get_gene(self):
-        assert os.path.exists(self.gene_bed)
-        return self.gene_bed
-
-    def get_rmsk(self):
-        assert os.path.exists(self.rmsk_bed)
-        return self.rmsk_bed
-
-    def get_anno(self):
-        assert os.path.exists(self.anno)
-        return self.anno
-
 
 def bam_merge(bam_ins, bam_out):
     """
@@ -469,44 +419,146 @@ def bam_merge(bam_ins, bam_out):
 
 
 
-##--------------------------------------------##
 ## virtual env
-def aligner_index_validator(path, aligner = 'bowtie'):
-    """validate the alignment index, bowtie, bowtie2, hisat2"""
-    # bowtie index
-    inspect = aligner + '-inspect'
-    cmd = [inspect, '-s', path]
-    n = subprocess.run(cmd, check = False, stdout = subprocess.PIPE).stdout
-    if len(n) > 0:
-        return True
+class Genome_info():
+    """
+    including the information of genome
+    index, annotation, ...
+    """
+
+    def __init__(self, genome, **kwargs):
+        assert isinstance(genome, str)
+        self.kwargs = kwargs
+        self.kwargs['genome'] = genome
+        if not 'path_data' in kwargs:
+            self.kwargs['path_data'] = os.path.join(pathlib.Path.home(), 
+                                                    'data', 'genome')
+        
+
+    def get_fa(self):
+        genome = self.kwargs['genome']
+        path_data = self.kwargs['path_data']
+        gfa = os.path.join(path_data, genome, 'bigZips', genome + '.fa')
+        assert os.path.exists(gfa)
+        return gfa
+
+
+    def get_fasize(self):
+        genome = self.kwargs['genome']
+        path_data = self.kwargs['path_data']
+        gsize = os.path.join(path_data, genome, 'bigZips', genome + '.chrom.sizes')
+        assert os.path.exists(gsize)
+        return gsize
+
+
+    def bowtie_index(self):
+        genome = self.kwargs['genome']
+        path_data = self.kwargs['path_data']
+        return idx_picker(genome, path_data=path_data, aligner='bowtie')
+
+
+    def bowtie2_index(self):
+        genome = self.kwargs['genome']
+        path_data = self.kwargs['path_data']
+        return idx_picker(genome, path_data=path_data, aligner='bowtie2')
+
+
+    def hisat2_index(self):
+        genome = self.kwargs['genome']
+        path_data = self.kwargs['path_data']
+        return idx_picker(genome, path_data=path_data, aligner='hisat2')
+
+
+    def star_index(self):
+        genome = self.kwargs['genome']
+        path_data = self.kwargs['path_data']
+        return idx_picker(genome, path_data=path_data, aligner='star')
+
+
+    def phylop100(self):
+        """
+        only support hg19
+        """
+        genome = self.kwargs['genome']
+        path_data = self.kwargs['path_data']
+        phylop100 = os.path.join(self.kwargs['path_data'],
+                            genome, 'phyloP100way', 
+                            genome + '.100way.phyloP100way.bw')
+        if not os.path.exists(phylop100):
+            phylop100 = None
+        return phylop100
+
+        
+    def gene_bed(self):
+        genome = self.kwargs['genome']
+        path_data = self.kwargs['path_data']
+        gbed = os.path.join(path_data, 
+                            genome,
+                            'annotation_and_repeats', 
+                            genome + '.refseq.bed')
+        if not os.path.exists(gbed):
+            gbed = None
+        return gbed
+
+
+    def gene_rmsk(self):
+        genome = self.kwargs['genome']
+        path_data = self.kwargs['path_data']
+        grmsk= os.path.join(path_data, 
+                            genome,
+                            'annotation_and_repeats', 
+                            genome + '.rmsk.bed')
+        if not os.path.exists(grmsk):
+            grmsk = None
+        return grmsk
+
+
+
+def is_idx(path, aligner='bowtie'):
+    """
+    check aligner index, bowtie, bowtie2, STAR
+    """
+    # bowtie/bowtie2
+    c = [aligner + '-inspect', '-s', path]
+    if aligner.lower() == 'star':
+        pg = os.path.join(path, 'Genome')
+        flag = True if os.path.exists(pg) else False
     else:
-        return False
+        p = subprocess.run(c, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
+        flag = True if len(p) > 0 else False
+    return flag
 
 
-def aligner_index_constructer(genome, name, aligner = 'bowtie'):
-    """return the bowtie_index for specific type/name"""
-    #bin_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
-    idx = os.path.join(goldclip_home, 'data', genome, aligner + '_index', name, name)
-    if aligner_index_validator(idx, aligner):
+
+def idx_picker(genome, group='genome', path_data=None, aligner='bowtie'):
+    """
+    return the path of index
+    group: genome, rRNA, tRNA, ...
+    aligner: bowtie, bowie2
+    #
+    default: path ~/data/genome/
+    """
+    assert isinstance(genome, str)
+    assert isinstance(group, str)
+    if path_data is None:
+        path_data = os.path.join(pathlib.Path.home(), 'data', 'genome')
+    idx = os.path.join(path_data, genome, aligner + '_index', group)
+    if is_idx(idx, aligner):
         return idx
     else:
         return None
+    
 
 
-def aligner_index_picker(genome, spikein):
-    """pick aligner index for specific groups"""
-    groups = ['viral', 'repeatRNA', 'retroviral', 'MT_trRNA']
-    # groups = ['MT_trRNA']
-    g_idxes = [aligner_index_constructer(genome, i) for i in groups]
-    spikein_idx = aligner_index_constructer(spikein, 'genome')
-    genome_idx = aligner_index_constructer(genome, 'genome')
-    if not genome_idx:
-        sys.exit('genome index not detected - ' + genome_idx)
-    if not spikein == genome and not spikein:
-        sys.exit('spikein index not detected - ' + spikein_idx)
-    if spikein == genome:
-        spikein_idx = None
-    idx_output = [spikein_idx] + g_idxes + [genome_idx]
-    idx_output = [i for i in idx_output if i] # remove None values
-    return idx_output
+def idx_grouper(genome, path_data=None, aligner='bowtie'):
+    """
+    return a group of indexes for genome mapping
+    eg: spikein, MT_trRNA, genome
+    """
+    group1 = ['viral', 'repeatRNA', 'retroviral', 'MT_trRNA', 'genome']
+    idxes = [idx_picker(genome, g, path_data=path_data, aligner=aligner) for g in group1]
+    idxes = list(filter(None.__ne__, idxes))
+    return idxes
+
+
 
