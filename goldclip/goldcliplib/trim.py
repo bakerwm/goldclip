@@ -257,7 +257,7 @@ def trim(fns, path_out, adapter3=None, len_min=15, qual_min=20,
                                      multi_cores=multi_cores, 
                                      overlap=overlap,
                                      rm_untrim=rm_untrim,
-                                     cut_fefore_trim=cut_before_trim,
+                                     cut_before_trim=cut_before_trim,
                                      overwrite=overwrite)
         else:
             logging.error('unknown --read12: %s' % read12)
