@@ -64,10 +64,11 @@ def run_goldclip(fq_files, path_out, genome, smp_name, spikein=None,
 
 
     # peak
-    path_peak = os.path.join(path_out, 'peaks')
-    peak_clipper_files = call_peak(genome, map_bam_files, path_peak, 
+    path_peak1 = os.path.join(path_out, 'peaks', 'clipper')
+    peak_clipper_files = call_peak(genome, map_bam_files, path_peak1, 
                                    tool='clipper')
-    peak_pyicoclip_files = call_peak(genome, map_bam_files, path_peak, 
+    path_peak2 = os.path.join(path_out, 'peaks', 'pyicoclip')
+    peak_pyicoclip_files = call_peak(genome, map_bam_files, path_peak2, 
                                      tool='pyicoclip')
 
     # rtstop
