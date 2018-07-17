@@ -23,8 +23,16 @@ from goldclip.helper import *
 def str_mismatch(a, b):
     """
     calculate the mismatches between two strings
+    query: a
+    subject: b
+    if b == null, return 0 mismatch
     """
-    return sum(list(map(lambda x, y : 0 if x == y else 1, a, b)))
+    assert isinstance(a, str)
+    assert isinstance(b, str)
+    m = sum(list(map(lambda x, y : 0 if x == y else 1, a, b)))
+    if b.lower() == 'null':
+        m = 1000
+    return m
 
 
 def bc_parser(fn):
@@ -148,7 +156,7 @@ def p7_bc_parser(fn):
                 continue
             if tabs[0] in d and tabs[1] in d[tabs[0]]:
                 raise ValueError('Duplicate barcodes detected: %s' % n)
-            d[tabs[0]][tabs[1].lower()] = tabs[2]
+            d[tabs[0]][tabs[1]] = tabs[2]
     _name = sorted(list(nested_dict_values(d)))
     _name_uniq = sorted(list(set(_name)))
     if not _name == _name_uniq:
@@ -164,7 +172,7 @@ def p7_bc_parser(fn):
 
 
 
-def p7_bc_validater(p7, bc, d, mm = 0):
+def p7_bc_validater(p7, bc, d, mm=0):
     """
     check whether p7 exists, barcode exists
     allow no more than {mm} mismatche(s)
@@ -173,10 +181,9 @@ def p7_bc_validater(p7, bc, d, mm = 0):
     p7_list = list(d.keys()) # for p7 list
     bc_list = get_keys(d, 2) # for barcode list
     a = [x for x in p7_list if str_mismatch(p7, x) <= mm]
-    if bc.lower() is 'null': # optional, barcode could be null
-        b = ['null']
-    else:
-        b = [x for x in bc_list if str_mismatch(bc, x) <= mm]
+    b1 = [x for x in bc_list if str_mismatch(bc, x) <= mm]
+    b2 = [x for x in bc_list if str_mismatch(bc, x) > 1000] # check null, 1kb
+    b = b2 if len(b2) == 1 else b1
     if len(a) == 1 and len(b) == 1:
         return d[a[0]][b[0]] # name
     elif len(a) > 1 or len(b) > 1:
