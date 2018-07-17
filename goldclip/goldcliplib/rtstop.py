@@ -17,7 +17,8 @@ import goldclip
 from goldclip.helper import *
 
 
-def _df_merge(dfs, how = 'inner'):
+
+def _df_merge(dfs, how='inner'):
     """
     merge a list of DataFame, only for RTStops
     header: ['chr', 'RTStop', 'strand', 'count']
@@ -25,9 +26,10 @@ def _df_merge(dfs, how = 'inner'):
     if len(dfs) == 1:
         return dfs[0]
     else:
-        df = pd.merge(dfs[0], dfs[1], how = how,
+        df = pd.merge(dfs[0], dfs[1], how=how,
             on = ['chr', 'start', 'end', 'name', 'score', 'strand'])
-        return _df_merge([df] + dfs[2:], how = 'inner')
+        return _df_merge([df] + dfs[2:], how=how)
+
 
 
 def _rt_extracter(df):
@@ -50,12 +52,12 @@ def _rt_extracter(df):
         m = [i for i in df_ext.columns if i not in df_bed6.columns]
         df_ext2 = df_ext.loc[:, m]
         # merge
-        df_rt = pd.concat([df_bed6, df_ext2], axis = 1)
+        df_rt = pd.concat([df_bed6, df_ext2], axis=1)
     return df_rt
 
 
 
-def _rt_counter(df, threshold = 1):
+def _rt_counter(df, threshold=1):
     """
     convert RTReads to RTStops
     group by 'chr', 'start', 'strand'
@@ -73,8 +75,9 @@ def _rt_counter(df, threshold = 1):
 
 def _rt_to_bed(df):
     """
-    convert RTRead / RTStop format to BED format
+    convert RTRead / RTStop to BED format
     Input: ['chr', 'RTStop', 'strand', ...]
+    Output: ['chr', 'start', 'end', 'name', 'score', 'strand']
     """
     df_rt = df[df.columns[:3]]
     df_ext = df[df.columns[3:]]
@@ -87,9 +90,9 @@ def _rt_to_bed(df):
     # columns dup in ext
     m = [i for i in df_ext.columns if i not in df_rt.columns]
     df_ext2 = df_ext[m]
-    df_bed = pd.concat([df_rt, df_ext2], axis = 1)
+    df_bed = pd.concat([df_rt, df_ext2], axis=1)
     # rename 'RTStop' to 'end'
-    df_bed2 = df_bed.rename(index = str, columns = {'RTStop': 'end'})
+    df_bed2 = df_bed.rename(index=str, columns={'RTStop': 'end'})
     return df_bed2
 
 
@@ -103,12 +106,12 @@ def rt_merge(rt_stops, intersect = 1):
     if len(rt_stops) == 0:
         sys.exit('no bed file detected')
     elif len(rt_stops) == 1:
-        m = rt_stops[0].rename(index = int, columns = {6: 'sum'})
+        m = rt_stops[0].rename(index=int, columns={6: 'sum'})
     else:
         if intersect ==  1:
-            m = _df_merge(rt_stops, how = 'inner') # intersect
+            m = _df_merge(rt_stops, how='inner') # intersect
         else:
-            m = _df_merge(rt_stops, how = 'outer') # union
+            m = _df_merge(rt_stops, how='outer') # union
             m = m.fillna(0) # replace NaN by 0
         # rename header, rep1 to repN
         m.columns = list(m.columns[:6]) + \
@@ -117,14 +120,15 @@ def rt_merge(rt_stops, intersect = 1):
         # sum replicates
         md = m[m.columns[:6]] # id
         mc = m[m.columns[6:]].astype('int') # count
-        rep_sum = mc.sum(axis = 1).astype('int')
-        rep_mean = mc.mean(axis = 1).map('{:.4f}'.format)
-        rep_std = mc.std(axis = 1).map('{:.4f}'.format)
-        mc = mc.assign(sum = rep_sum)
-        mc = mc.assign(mean = rep_mean)
-        mc = mc.assign(std = rep_std)
-        m = pd.concat([md, mc], axis = 1) # rtstops
+        rep_sum = mc.sum(axis=1).astype('int')
+        rep_mean = mc.mean(axis=1).map('{:.4f}'.format)
+        rep_std = mc.std(axis=1).map('{:.4f}'.format)
+        mc = mc.assign(sum=rep_sum)
+        mc = mc.assign(mean=rep_mean)
+        mc = mc.assign(std=rep_std)
+        m = pd.concat([md, mc], axis=1) # rtstops
     return m
+
 
 
 def _bed_to_rtstop(bed, path_out, threshold):
@@ -187,7 +191,7 @@ def call_rtstop(bed_files, path_out, smp_name, threshold, intersect, overwrite=F
         rep_rt_reads.append(rep_rt_read)
         rep_rt_stops.append(rep_rt_stop)
         report_rt_stops.append(rt_stop)
-    
+
     # merge
     path_merge = os.path.join(path_out, smp_name)
     merge_rt_read = os.path.join(path_merge, smp_name + '.RTRead.bed')
@@ -197,21 +201,25 @@ def call_rtstop(bed_files, path_out, smp_name, threshold, intersect, overwrite=F
             os.makedirs(path_merge)
 
         # merge RTRead
-        merge_rt_read_bed = pd.concat(rep_rt_reads, axis = 0, ignore_index = True)
+        merge_rt_read_bed = pd.concat(rep_rt_reads, axis=0, ignore_index=True)
 
         # merge RTstop
         merge_rt_stop_bed = rt_merge(rep_rt_stops, intersect)
-        merge_rt_stop_bed.to_csv(merge_rt_stop, '\t', header = False, index = False)
+        merge_rt_stop_bed.to_csv(merge_rt_stop, '\t', header=False, index=False)
 
         # recover RTStop to RTRead
         # 'sum' column = RTStop count
         df = merge_rt_stop_bed.copy()
+        if len(rep_rt_stops) == 1:  # only one input file
+            df['sum'] = df[0]
         df = df.loc[df.index.repeat(df['sum'])].reset_index() #repeat rows
         merge_rt_read_stop = df.drop(['index'], axis = 1)
-        merge_rt_read_stop.to_csv(merge_rt_read, '\t', header = False, index = False)
+        merge_rt_read_stop.to_csv(merge_rt_read, '\t', header=False, index=False)
         del df # remove tmp name 
 
     ## to report
     report_rt_stops.append(merge_rt_stop)
     return report_rt_stops
 
+
+## EOF
