@@ -179,6 +179,8 @@ def call_rtstop(bed_files, path_out, smp_name, threshold, intersect, overwrite=F
     rep_rt_stops = []
     report_rt_stops = []
     for bed in bed_files:
+        if file_row_counter(bed) == 0:
+            continue # skip empty files
         bed_prefix = os.path.basename(os.path.splitext(bed)[0]) #
         path_sub = os.path.join(path_out, bed_prefix)
         rt_read = os.path.join(path_sub, bed_prefix + '.RTRead.bed') # rt reads
@@ -197,8 +199,9 @@ def call_rtstop(bed_files, path_out, smp_name, threshold, intersect, overwrite=F
     merge_rt_read = os.path.join(path_merge, smp_name + '.RTRead.bed')
     merge_rt_stop = os.path.join(path_merge, smp_name + '.RTStop.bed')
     if not os.path.exists(merge_rt_stop) or overwrite:
-        if not os.path.exists(path_merge):
-            os.makedirs(path_merge)
+        if len(rep_rt_reads) == 0:
+            return None
+        assert is_path(path_merge)
 
         # merge RTRead
         merge_rt_read_bed = pd.concat(rep_rt_reads, axis=0, ignore_index=True)
