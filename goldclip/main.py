@@ -34,7 +34,7 @@ subparser_map = add_map_args(subparser_map)
 subparser_peak = subparsers.add_parser('peak', help='calling peaks.')
 subparser_peak = add_peak_args(subparser_peak)
 subparser_rtstop = subparsers.add_parser('rtstop', help='calling RT-Stops.')
-subparser_rtstop = add_peak_args(subparser_rtstop)
+subparser_rtstop = add_rtstop_args(subparser_rtstop)
 subparser_report = subparsers.add_parser('report', help='making a report for the project.')
 subparser_report = add_report_args(subparser_report)
 
@@ -56,8 +56,9 @@ class goldclip:
             map_params = self.kwargs
             m = Map(**map_params).run()
         elif 'peak' in self.kwargs['subcommand'].lower():
-            peak_params = self.kwargs
-            p = Peak(**peak_params).run()
+            p = Peak(**self.kwargs).run()
+        elif 'rtstop'in self.kwargs['subcommand'].lower():
+            r = Rtstop(**self.kwargs).run()
         elif 'report' in self.kwargs['subcommand'].lower():
             report_params = self.kwargs
             r = Report(**report_params).run()
