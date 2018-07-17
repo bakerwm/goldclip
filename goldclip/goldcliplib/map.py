@@ -242,6 +242,7 @@ def map(fns, smp_name, path_out, genome, spikein=None, multi_cores=1,
     fn_bam_files = []
     # mapping 
     for fn in fns:
+        logging.info('mapping file: %s' % fn)
         fn_prefix = file_prefix(fn)[0]
         fn_prefix = re.sub('\.clean|\.nodup|\.cut', '', fn_prefix)
         path_out_fn = os.path.join(path_out, fn_prefix)
@@ -297,20 +298,5 @@ def map(fns, smp_name, path_out, genome, spikein=None, multi_cores=1,
 
     return [gbam_files, gbed_files]
 
-
-
-# def run():
-#     fqs = [f.name for f in self.kwargs['i']]
-#     smp_name = self.kwargs['n']
-#     path_out = self.kwargs['o']
-#     genome = self.kwargs['g']
-#     spikein = self.kwargs['k']
-#     multi_cores = self.kwargs['threads']
-#     aligner = self.kwargs['aligner']
-#     path_data = self.kwargs['path_data']
-#     overwrite = self.kwargs['overwrite']
-#     tmp = map_se(fqs, smp_name, path_out, genome, spikein, 
-#                  multi_cores=multi_cores, aligner=aligner,
-#                  path_data=path_data, overwrite=overwrite)
 
 ## EOF

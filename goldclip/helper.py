@@ -357,17 +357,24 @@ def venv_checker(venv = '~/envs/py27', into_venv = True):
 def bam2bw(genome, pathout, bam, strandness = True, binsize = 1):
     """
     Convert bam to bigWig using deeptools
-    effective length of genome:
-    dm3=121,400,000,
-    mm9=2,150,570,000,
-    hg19=2,451,960,000
-    Mappable sequence of a genome, see Table 1 in 
-    url: https://www.nature.com/articles/nbt.1518.pdf
+    https://deeptools.readthedocs.io/en/develop/content/feature/effectiveGenomeSize.html
+    history:
+    1. Mappable sequence of a genome, see Table 1 in 
+       url: https://www.nature.com/articles/nbt.1518.pdf
+    2. effective genome size:
+        - non-N bases
+        - regions (of some size) uniquely mappable
+    3. UCSC
+    http://genomewiki.ucsc.edu/index.php/Hg19_100way_Genome_size_statistics
+    http://genomewiki.ucsc.edu/index.php/Hg38_7-way_Genome_size_statistics
     """
-    assert is_path(pathout, dir_create = True)
-    effsize = {'dm3': 121400000,
-               'mm9': 2150570000,
-               'hg19': 2451960000,}
+    assert is_path(pathout)
+    effsize = {'dm3': 162367812,
+               'dm6': 142573017,
+               'mm9': 2620345972,
+               'mm10': 2652783500,
+               'hg19': 2451960000,
+               'hg38': 2913022398,}
     gsize = effsize[genome]
     prefix = os.path.basename(os.path.splitext(bam)[0])
     if strandness:

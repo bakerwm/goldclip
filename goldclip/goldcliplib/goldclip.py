@@ -15,6 +15,7 @@ from goldclip.goldcliplib.trim import *
 from goldclip.goldcliplib.map import *
 from goldclip.goldcliplib.peak import *
 from goldclip.goldcliplib.rtstop import *
+from goldclip.goldcliplib.run import *
 
 
 class Demx:
@@ -193,3 +194,43 @@ class Rtstop:
         return tmp
 
 
+
+class Run_all:
+    """
+    call RT-stops from BAM files
+    """
+    def __init__(self, *args, **kwargs):
+        self.kwargs = kwargs
+
+
+    def run(self):
+        logging.info('GoldCLIP start')
+        fq_files = [f.name for f in self.kwargs['i']]
+        path_out = self.kwargs['o']
+        genome = self.kwargs['g']
+        smp_name = self.kwargs['n']
+        spikein = self.kwargs['k']
+        is_trimmed = self.kwargs['trimmed']
+        ad3 = self.kwargs['a']
+        read12 = self.kwargs['read12']
+        len_min = self.kwargs['m']
+        qual_pct = self.kwargs['p']
+        qual_min = self.kwargs['q']
+        err_rate = self.kwargs['e']
+        overlap = self.kwargs['O']
+        rm_untrim = self.kwargs['rm_untrim'],
+        rm_dup = self.kwargs['rm_dup']
+        cut_before_trim = self.kwargs['cut_before_trim']
+        cut_after_trim = self.kwargs['cut_after_trim']
+        aligner = self.kwargs['aligner']
+        threshold = self.kwargs['t']
+        intersect = self.kwargs['c']
+        path_data = self.kwargs['path_data']
+        threads = self.kwargs['threads']
+        overwrite = self.kwargs['overwrite']
+        tmp = run_goldclip(fq_files, path_out, genome, smp_name, spikein,
+                           is_trimmed, ad3, read12, len_min, qual_pct,
+                           qual_min, err_rate, overlap, rm_untrim, rm_dup,
+                           cut_before_trim, cut_after_trim, aligner, threshold,
+                           intersect, path_data, threads, overwrite)
+        return tmp

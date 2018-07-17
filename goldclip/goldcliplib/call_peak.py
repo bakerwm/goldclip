@@ -248,7 +248,6 @@ def map(fns, smp_name, path_out, genome, spikein=None, multi_cores=1,
         b = map_se_batch(fn, idxes, path_out_fn, multi_cores=multi_cores,
                          overwrite=overwrite) # list
         fn_bam_files.append(b) # bam files
-        # se_map_wrapper(b)
 
     # merge bam files
     path_out_merge = os.path.join(path_out, smp_name)

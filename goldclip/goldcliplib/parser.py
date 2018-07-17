@@ -195,6 +195,7 @@ def add_rtstop_args(parser):
 
 
 
+
 def add_report_args(parser):
     """
     create report, advance analysis based on previous results
@@ -202,3 +203,74 @@ def add_report_args(parser):
     pass
 
 
+def add_run_args(parser):
+    """
+    run goldclip program from fastq to peaks
+    """
+    parser.add_argument('-i', nargs='+', required=True, metavar='file', 
+        type=argparse.FileType('r'),
+        help='reads in FASTQ format, support (*.gz), 1-4 files.')
+    parser.add_argument('-o', default=None, metavar='output', 
+        help='The directory to save results.')
+    parser.add_argument('-g', required=True, default='hg19', 
+        metavar='GENOME', choices=['dm3', 'hg19', 'hg38', 'mm10'],
+        help='Reference genome : dm3, hg19, hg39, mm10, default: hg19')
+    parser.add_argument('-n', required=True, metavar='NAME',
+        help='Name of the experiment')
+    parser.add_argument('-k', default='hg19', 
+        metavar='Spike-in', choices=['dm3', 'hg19', 'hg38', 'mm10'],
+        help='Spike-in genome : dm3, hg19, hg38, mm10, default: None')
+    parser.add_argument('--trimmed', action='store_true',
+        help='if input fastq files were clean reads, specify this option')
+
+    parser.add_argument('-a', default=None, metavar='adapter',
+        help='Adapter sequence in the 3 prime end of read, \
+        default [AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCGATCTCGTATGCCGTCTTCTGCTTG].')
+    parser.add_argument('--read12', type=int, default=1, metavar='read12',
+        help='which one of PE reads, 1=read1, 2=read2, default: 1')
+    parser.add_argument('-m', default=15, metavar='len_min', 
+        type=int, help='Minimum length of reads after trimming, defualt [15]')
+    parser.add_argument('-p', default=80, metavar='percent', 
+        type=int,
+        help='minimum percent of bases that must have -q quality, default [80]')
+    parser.add_argument('-q', default=20, metavar='quality', 
+        type=int,
+        help='The cutoff of base quality, default [20]')    
+    parser.add_argument('-e', default=0.1, metavar='err_rate', 
+        type=float,
+        help='Maximum allowed error rate, default [0.1]')
+    parser.add_argument('-O', default=1, metavar='overlap',
+        help='Required N bases overlap between reads and adapter, default [1]')
+    parser.add_argument('--rm_untrim', action='store_false',
+        help='if specified, discard reads without adapter')
+    parser.add_argument('--rm_dup', action='store_true',
+        help='if specified, remove duplicated reads' )
+    parser.add_argument('--cut_before_trim', default='0', metavar='cut1', 
+        help='cut bases before trimming adapter, Number of bases to cut from each \
+        read, plus on 5-prime end, minus on 3-prime end, could be \
+        single, or double numbers, eg: 3 or -4 or 3,-4, default [0]')
+    parser.add_argument('--cut_after_trim', default='0', metavar='cut2', 
+        help='cut bases after trimming adapter, Number of bases to cut from each \
+        read, plus on 5-prime end, minus on 3-prime end, , could be \
+        single, or double numbers, eg: 3 or -4 or 3,-4, default [0]')
+
+    parser.add_argument('--aligner', default='bowtie', 
+        choices=['bowtie', 'bowtie2', 'star'],
+        help='Choose which aligner to use. default: bowtie')
+    parser.add_argument('-t', required = False, default = 1, 
+        choices = list(range(1, 4)), metavar = 'threshold', type = int, 
+        help = 'The threshold to filt RTStops, default [1].')
+    parser.add_argument('-c', required = False, default = 0, choices = [0, 1], 
+        metavar = 'intersect', type = int,
+        help = 'how to merge 0=union, 1=intersect, default [0]')
+
+    parser.add_argument('--path_data', 
+        help='The directory of genome files, default: \
+        [$HOME/data/genome/]')
+    parser.add_argument('--threads', default=1, 
+        metavar='threads', type=int,
+        help='Number of threads to launch, default [1]')
+    parser.add_argument('--overwrite', action='store_true',
+        help='if spcified, overwrite exists file')
+
+    return parser

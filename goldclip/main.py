@@ -25,6 +25,9 @@ parser = argparse.ArgumentParser(prog='goldclip', description='Sub-commands of g
 subparsers = parser.add_subparsers(help='sub-commands.', dest='subcommand')
 subparsers.required = True
 
+## options for sub-programs
+subparser_demx = subparsers.add_parser('run', help='running goldclip from fastq to peaks.')
+subparser_demx = add_run_args(subparser_demx)
 subparser_demx = subparsers.add_parser('demx', help='demultiplexing illumina reads.')
 subparser_demx = add_demx_args(subparser_demx)
 subparser_trim = subparsers.add_parser('trim', help='trimming reads.')
@@ -44,27 +47,21 @@ class goldclip:
     def __init__(self, *args, **kwargs):
         self.kwargs = kwargs
 
-
     def start_process(self):
         if 'demx' in self.kwargs['subcommand'].lower():
-            demx_params = self.kwargs
-            d = Demx(**demx_params).run()
+            d = Demx(**self.kwargs).run()
         elif 'trim' in self.kwargs['subcommand'].lower():
-            trim_params = self.kwargs
-            t = Trim(**trim_params).run()
+            t = Trim(**self.kwargs).run()
         elif 'map' in self.kwargs['subcommand'].lower():
-            map_params = self.kwargs
-            m = Map(**map_params).run()
+            m = Map(**self.kwargs).run()
         elif 'peak' in self.kwargs['subcommand'].lower():
             p = Peak(**self.kwargs).run()
         elif 'rtstop'in self.kwargs['subcommand'].lower():
             r = Rtstop(**self.kwargs).run()
         elif 'report' in self.kwargs['subcommand'].lower():
-            report_params = self.kwargs
-            r = Report(**report_params).run()
-        elif 'run_all' in self.kwargs['subcommand'].lower():
-            all_params = self.kwargs
-            a = Run_all(**all_params).run()
+            r = Report(**self.kwargs).run()
+        elif 'run' in self.kwargs['subcommand'].lower():
+            a = Run_all(**self.kwargs).run()
         else:
             raise ValueError('Unknown subcommand: %s' % self.kwargs['subcommand'])
 
