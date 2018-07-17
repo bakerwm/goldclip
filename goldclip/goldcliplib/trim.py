@@ -266,16 +266,16 @@ def trim(fns, path_out, adapter3=None, len_min=15, qual_min=20,
             if not cut_after_trim == '0':
                 f1 = dup_remover(fn_out_file, path_out, q=qual_min)
                 f2 = ends_trimmer(f1, path_out, cut_after_trim=cut_after_trim, len_min=len_min)
-                # os.remove(fn_out_file)                
-                # os.remove(f1)
+                os.remove(fn_out_file)                
+                os.remove(f1)
                 fn_out_file = f2
             else:
                 f3 = dup_remover(fn_out_file, path_out, q=qual_min)
-                # os.remove(fn_out_file)
+                os.remove(fn_out_file)
                 fn_out_file = f3
         elif not cut_after_trim == '0':
             f4 = ends_trimmer(fn_out_file, path_out, cut_after_trim=cut_after_trim, len_min=len_min)
-            # os.remove(fn_out_file)
+            os.remove(fn_out_file)
             fn_out_file = f4
         else:
             pass # return fn_out_file
