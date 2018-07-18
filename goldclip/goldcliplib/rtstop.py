@@ -17,7 +17,6 @@ import goldclip
 from goldclip.helper import *
 
 
-
 def _df_merge(dfs, how='inner'):
     """
     merge a list of DataFame, only for RTStops
