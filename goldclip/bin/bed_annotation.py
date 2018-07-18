@@ -19,11 +19,7 @@ import pybedtools
 import pandas as pd
 import numpy as np
 import goldclip
-# from goldclip.goldcliplib.bed_fixer import Bed_parser
-
-print(goldclip.__file__)
-
-sys.exit('AAAA')
+from goldclip.bin.bed_fixer import Bed_parser
 
 def get_args():
     ## parsing arguments
