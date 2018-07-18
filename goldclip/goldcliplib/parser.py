@@ -272,5 +272,17 @@ def add_run_args(parser):
         help='Number of threads to launch, default [1]')
     parser.add_argument('--overwrite', action='store_true',
         help='if spcified, overwrite exists file')
-
     return parser
+
+
+def add_report_args(parser):
+    parser.add_argument('--path', required=True, metavar='goldclip_output',
+        help = 'The directory of goldclip output')
+    parser.add_argument('--name', required=True, metavar='project name',
+        help = 'The name of the project')
+    parser.add_argument('--genome', required=True, metavar='GENOME',
+        help = 'The reference genome of the project')
+    return parser
+
+
+

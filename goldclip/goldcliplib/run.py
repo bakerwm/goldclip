@@ -78,10 +78,7 @@ def run_goldclip(fq_files, path_out, genome, smp_name, spikein=None,
                                overwrite=overwrite)
 
     # report
-
-
-
-
+    tmp = goldclip_report(path_out, smp_name, genome)
 
 
 

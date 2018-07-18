@@ -239,62 +239,6 @@ def filename_shorter(fn, with_path=False):
         p2 = os.path.basename(p2)
     return p2 + px
 
-
-def bed_parser(fn, usecols = None):
-    """
-    read BED file as pandas DataFrame
-    select specific columns, default all, (None)
-    require at least 6 columns
-    """
-    if not pathlib.Path(fn).is_file() or os.path.getsize(fn) ==  0:
-        df = pd.DataFrame(columns = ['chr', 'start', 'end', 'name', 'score', 
-                                     'strand'])
-        logging.warning('empty bed file: %s' % fn)
-        return df
-    else:
-        df = pd.read_table(fn, '\t', usecols = usecols, header = None,
-            dtype = {'0': np.str, '1': np.int64, '2': np.int64, '3': np.str, \
-                '4': np.int64, '5': np.str})
-        df = df.rename(index = str, columns = {0: 'chr', 1: 'start', 2: 'end', \
-                3: 'name', 4: 'score', 5: 'strand'})
-        return bed_fixer(df)
-
-
-
-def bed_filter(fn, bed_exclude, bed_out, overlap = True, save = True):
-    """
-    remove records from fn that have overlap with bed_exclude, and 
-    save to fn using pybedtools
-    overlap, True: intersect, False: not intersect
-    """
-    assert pathlib.Path(fn).is_file()
-    bed_out_path = os.path.dirname(bed_out)
-    assert is_path(bed_out_path)
-    a = pybedtools.BedTool(fn)
-    b = pybedtools.BedTool(bed_exclude)
-    if overlap is True:
-        a_and_b = a.intersect(b, wa = True, u = True) # intersect with b
-    elif overlap is False:
-        a_and_b = a.intersect(b, wa = True, v = True) # exclude b
-    else:
-        logging.error('unknown overlap: %s' % overlap)
-    if save is True:
-        a_and_b.moveto(bed_out)
-    else:
-        return a_and_b # BedTool object
-
-
-def bed_fixer(df):
-    """
-    filt BED records 
-    1. start, end both are int
-    2. start < end
-    """
-    dx = df[['start', 'end']].apply(pd.to_numeric)
-    c = ((dx['start'] >=  0) & dx['end'] >=  0) & (dx['start'] < dx['end'])
-    return df.loc[c, :]
-
-
 ##--------------------------------------------##
 ## virtualenv 
 def is_venv():
@@ -568,4 +512,60 @@ def idx_grouper(genome, path_data=None, aligner='bowtie'):
     return idxes
 
 
+
+
+
+# def bed_parser(fn, usecols = None):
+#     """
+#     read BED file as pandas DataFrame
+#     select specific columns, default all, (None)
+#     require at least 6 columns
+#     """
+#     if not pathlib.Path(fn).is_file() or os.path.getsize(fn) ==  0:
+#         df = pd.DataFrame(columns = ['chr', 'start', 'end', 'name', 'score', 
+#                                      'strand'])
+#         logging.warning('empty bed file: %s' % fn)
+#         return df
+#     else:
+#         df = pd.read_table(fn, '\t', usecols = usecols, header = None,
+#             dtype = {'0': np.str, '1': np.int64, '2': np.int64, '3': np.str, \
+#                 '4': np.int64, '5': np.str})
+#         df = df.rename(index = str, columns = {0: 'chr', 1: 'start', 2: 'end', \
+#                 3: 'name', 4: 'score', 5: 'strand'})
+#         return bed_fixer(df)
+
+
+
+# def bed_filter(fn, bed_exclude, bed_out, overlap = True, save = True):
+#     """
+#     remove records from fn that have overlap with bed_exclude, and 
+#     save to fn using pybedtools
+#     overlap, True: intersect, False: not intersect
+#     """
+#     assert pathlib.Path(fn).is_file()
+#     bed_out_path = os.path.dirname(bed_out)
+#     assert is_path(bed_out_path)
+#     a = pybedtools.BedTool(fn)
+#     b = pybedtools.BedTool(bed_exclude)
+#     if overlap is True:
+#         a_and_b = a.intersect(b, wa = True, u = True) # intersect with b
+#     elif overlap is False:
+#         a_and_b = a.intersect(b, wa = True, v = True) # exclude b
+#     else:
+#         logging.error('unknown overlap: %s' % overlap)
+#     if save is True:
+#         a_and_b.moveto(bed_out)
+#     else:
+#         return a_and_b # BedTool object
+
+
+# def bed_fixer(df):
+#     """
+#     filt BED records 
+#     1. start, end both are int
+#     2. start < end
+#     """
+#     dx = df[['start', 'end']].apply(pd.to_numeric)
+#     c = ((dx['start'] >=  0) & dx['end'] >=  0) & (dx['start'] < dx['end'])
+#     return df.loc[c, :]
 

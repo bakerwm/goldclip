@@ -16,6 +16,7 @@ from goldclip.goldcliplib.map import *
 from goldclip.goldcliplib.peak import *
 from goldclip.goldcliplib.rtstop import *
 from goldclip.goldcliplib.run import *
+from goldclip.goldcliplib.report import *
 
 
 class Demx:
@@ -234,3 +235,19 @@ class Run_all:
                            cut_before_trim, cut_after_trim, aligner, threshold,
                            intersect, path_data, threads, overwrite)
         return tmp
+
+
+class Report:
+    """
+    create report of goldclip
+    """
+    def __init__(self, *args, **kwargs):
+        self.kwargs = kwargs
+
+    def run(self):
+        path_out = self.kwargs['path']
+        smp_name = self.kwargs['name']
+        genome = self.kwargs['genome']
+        tmp = goldclip_report(path_out, smp_name, genome)
+        return tmp
+

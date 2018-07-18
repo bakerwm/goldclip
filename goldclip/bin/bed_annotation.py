@@ -87,8 +87,9 @@ def anno_picker(genome, group='homer', path_data=None):
     for f in anno:
         if os.path.exists(f):
             f_tmp = f + '.tmp'
-            os.replace(f, f_tmp)
-            Bed_parser(f_tmp).bed_fixer().saveas(f)
+            if not os.path.exists(f_tmp):
+                os.replace(f, f_tmp)
+                Bed_parser(f_tmp).bed_fixer().saveas(f)
             anno_fixed.append(f)
     if len(anno_fixed) == 0:
         raise ValueError('illegeal annotation files: %s' % anno_dir)

@@ -49,7 +49,9 @@ class goldclip:
         self.kwargs = kwargs
 
     def start_process(self):
-        if 'demx' in self.kwargs['subcommand'].lower():
+        if 'run' in self.kwargs['subcommand'].lower():
+            a = Run_all(**self.kwargs).run()
+        elif 'demx' in self.kwargs['subcommand'].lower():
             d = Demx(**self.kwargs).run()
         elif 'trim' in self.kwargs['subcommand'].lower():
             t = Trim(**self.kwargs).run()
@@ -61,8 +63,6 @@ class goldclip:
             r = Rtstop(**self.kwargs).run()
         elif 'report' in self.kwargs['subcommand'].lower():
             r = Report(**self.kwargs).run()
-        elif 'run' in self.kwargs['subcommand'].lower():
-            a = Run_all(**self.kwargs).run()
         else:
             raise ValueError('Unknown subcommand: %s' % self.kwargs['subcommand'])
 
