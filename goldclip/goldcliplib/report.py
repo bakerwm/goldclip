@@ -63,7 +63,7 @@ class Goldclip_output(object):
         self.path = path
         self.name = smp_name
         self.genome = genome
-        # self.group = group
+        self.group = group
         # self.bam2bed = bam2bed
         # self.rep_only = rep_only
         # self.merge_only = merge_only
@@ -423,7 +423,7 @@ class Goldclip_output(object):
         df = self.fig1_trim_map()
         df = self.fig2_read_anno(genome=genome, group=group)
         df = self.fig3_read_cor(window=window, multi_cores=multi_cores)
-        df = self.fig4_rt_cor()
+        df = self.fig4_rtstop_cor()
         df = self.fig5_peak_count()
         df = self.fig6_peak_length()
         df = self.fig7_peak_anno(genome=genome, group=group)
