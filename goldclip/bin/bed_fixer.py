@@ -14,6 +14,8 @@ import argparse
 import logging
 import pathlib
 import tempfile
+import binascii
+import gzip
 import numpy as np
 import pandas as pd
 
@@ -38,22 +40,44 @@ def get_args():
     return args
 
 
+def is_gz(filepath):
+    with open(filepath, 'rb') as test_f:
+        return binascii.hexlify(test_f.read(2)) == b'1f8b'
 
-class Bed_parser():
+
+def file_row_counter(fn):
+    """
+    count the file rows
+    count '\n' 
+    from @glglgl on stackoverflow, modified
+    https://stackoverflow.com/a/9631635/2530783
+    """
+    def blocks(files, size = 1024 * 1024):
+        while True:
+            b = files.read(size)
+            if not b: break
+            yield b
+    freader = gzip.open if is_gz(fn) else open
+    with freader(fn, 'rt', encoding="utf-8", errors='ignore') as fi:
+        return sum(bl.count('\n') for bl in blocks(fi))
 
 
-    def __init__(self, bed=None, **kwargs):
+class Bed_parser(object):
+
+
+    def __init__(self, bed):
         """
         parsing BED records from file
         """
+        self.bed = bed
         if isinstance(bed, Bed_parser):
             self.bed = bed.bed
         elif isinstance(bed, pd.DataFrame):
             self.bed = bed
         elif isinstance(bed, io.TextIOWrapper):
-            self.bed = self._bed_parser(bed)
+            self.bed = self._bed_parser()
         elif os.path.exists(bed):
-            self.bed = self._bed_parser(bed)
+            self.bed = self._bed_parser()
         else:
             raise ValueError('not supported file')
 
@@ -115,36 +139,46 @@ class Bed_parser():
 
 
     
-    def _bed_parser(self, bed=None, usecols=None):
+    def _bed_parser(self, usecols=None):
         """
         read BED file as pandas DataFrame
         select specific columns, default all, (None)
         require at least 6 columns
         """
+        bed = self.bed
         df = pd.DataFrame(columns = ['chr', 'start', 'end', 'name', 'score',
                                      'strand'])
         if isinstance(bed, Bed_parser):
             return bed
         elif isinstance(bed, pd.DataFrame):
             return Bed_parser(bed)
-        elif isinstance(bed, io.TextIOWrapper) or os.path.exists(bed):
+        elif isinstance(bed, io.TextIOWrapper):
             df = pd.read_table(bed, '\t', usecols=usecols, header=None,
                     dtype = {'0': np.str, '1': np.int64, '2': np.int64, \
                              '3': np.str, '4': np.int64, '5': np.str})
             df = df.rename(index = str, columns = {0: 'chr', 1: 'start', \
                            2: 'end', 3: 'name', 4: 'score', 5: 'strand'})
             return df
+        elif os.path.exists(bed):
+            if file_row_counter(bed) == 0:
+                logging.error('empty bed file: %s' % bed)
+            else:
+                df = pd.read_table(bed, '\t', usecols=usecols, header=None) #,
+                        # dtype = {'0': np.str, '1': np.int64, '2': np.int64, '3': np.str, '4': np.int64, '5': np.str})
+                df = df.rename(index = str, columns = {0: 'chr', 1: 'start', 2: 'end', 3: 'name', 4: 'score', 5: 'strand'})
+            return df
         else:
             raise ValueError('unknown values')
 
 
 
-    def bed_fixer(self, bed=None, usecols=None):
+    def bed_fixer(self, usecols=None):
         """
         filt BED records
         1. start, end both are int
         2. start < end
         """
+        bed = self.bed
         if isinstance(bed, Bed_parser):
             df = bed.bed
         elif isinstance(bed, pd.DataFrame):
@@ -154,7 +188,7 @@ class Bed_parser():
             if isinstance(bed, pd.DataFrame):
                 df = bed
             else:
-                df = self._bed_parser(bed).bed
+                df = self._bed_parser().bed
         else:
             raise ValueError('unknown values')
 
