@@ -21,7 +21,7 @@ import pandas as pd
 import pysam
 import pybedtools
 import binascii
-
+from goldclip.bin.bed_fixer import *
 from goldclip.configure import goldclip_home
 from goldclip.helper import *
 
@@ -298,7 +298,7 @@ def venv_checker(venv = '~/envs/py27', into_venv = True):
 
 ##--------------------------------------------##
 ## config
-def bam2bw(genome, pathout, bam, strandness = True, binsize = 1):
+def bam2bw(bam, genome, path_out, strandness=True, binsize=1, overwrite=False):
     """
     Convert bam to bigWig using deeptools
     https://deeptools.readthedocs.io/en/develop/content/feature/effectiveGenomeSize.html
@@ -312,7 +312,7 @@ def bam2bw(genome, pathout, bam, strandness = True, binsize = 1):
     http://genomewiki.ucsc.edu/index.php/Hg19_100way_Genome_size_statistics
     http://genomewiki.ucsc.edu/index.php/Hg38_7-way_Genome_size_statistics
     """
-    assert is_path(pathout)
+    assert is_path(path_out)
     effsize = {'dm3': 162367812,
                'dm6': 142573017,
                'mm9': 2620345972,
@@ -320,27 +320,32 @@ def bam2bw(genome, pathout, bam, strandness = True, binsize = 1):
                'hg19': 2451960000,
                'hg38': 2913022398,}
     gsize = effsize[genome]
-    prefix = os.path.basename(os.path.splitext(bam)[0])
+    # prefix = os.path.basename(os.path.splitext(bam)[0])
+    prefix = file_prefix(bam)[0]
+    bw_log = os.path.join(path_out, prefix + '.deeptools.log')
     if strandness:
-        fwd_bw = os.path.join(pathout, prefix + '.fwd.bigWig')
-        rev_bw = os.path.join(pathout, prefix + '.rev.bigWig')
-        c2 = 'bamCoverage -b {} -o {} --binSize {} --filterRNAstrand forward --normalizeTo1x {}'.format(bam, fwd_bw, binsize, gsize)
-        c3 = 'bamCoverage -b {} -o {} --binSize {} --filterRNAstrand reverse --normalizeTo1x {}'.format(bam, rev_bw, binsize, gsize)
-        if os.path.exists(fwd_bw) and os.path.exists(rev_bw):
+        bw_fwd = os.path.join(path_out, prefix + '.fwd.bigWig')
+        bw_rev = os.path.join(path_out, prefix + '.rev.bigWig')
+        c1 = 'bamCoverage -b {} -o {} --binSize {} --filterRNAstrand forward \
+              --normalizeTo1x {}'.format(bam, bw_fwd, binsize, gsize)
+        c2 = 'bamCoverage -b {} -o {} --binSize {} --filterRNAstrand reverse \
+              --normalizeTo1x {}'.format(bam, bw_rev, binsize, gsize)
+        if os.path.exists(bw_fwd) and os.path.exists(bw_rev) and not overwrite:
             logging.info('file exists, bigWig skipped ...')
         else:
-            subprocess.run(shlex.split(c2), stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-            subprocess.run(shlex.split(c3), stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-            # os.system(c2)
-            # os.system(c3)
+            with open(bw_log, 'wt') as fo:
+                subprocess.run(shlex.split(c1), stdout=fo, stderr=fo)
+            with open(bw_log, 'wa') as fo:
+                subprocess.run(shlex.split(c2), stdout=fo, stderr=fo)
     else:
-        bw = os.path.join(pathout, prefix + '.bigWig')
-        c1 = 'bamCoverage -b {} -o {} --binSize {} --normalizeTo1x {}'.format(bam, bw, binsize, gsize)
-        if os.path.exists(bw):
+        bw = os.path.join(path_out, prefix + '.bigWig')
+        c3 = 'bamCoverage -b {} -o {} --binSize {} \
+              --normalizeTo1x {}'.format(bam, bw, binsize, gsize)
+        if os.path.exists(bw) and not overwrite:
             logging.info('file exists, bigWig skipped ...')
         else:
-            subprocess.run(shlex.split(c1), stdout = subprocess.PIPE, stderr = subprocess.PIPE)
-            #os.system(c1)
+            with open(bw_log, 'wt') as fo:
+                subprocess.run(shlex.split(c3), stdout=fo, stderr=fo)
 
 
 
@@ -515,24 +520,24 @@ def idx_grouper(genome, path_data=None, aligner='bowtie'):
 
 
 
-# def bed_parser(fn, usecols = None):
-#     """
-#     read BED file as pandas DataFrame
-#     select specific columns, default all, (None)
-#     require at least 6 columns
-#     """
-#     if not pathlib.Path(fn).is_file() or os.path.getsize(fn) ==  0:
-#         df = pd.DataFrame(columns = ['chr', 'start', 'end', 'name', 'score', 
-#                                      'strand'])
-#         logging.warning('empty bed file: %s' % fn)
-#         return df
-#     else:
-#         df = pd.read_table(fn, '\t', usecols = usecols, header = None,
-#             dtype = {'0': np.str, '1': np.int64, '2': np.int64, '3': np.str, \
-#                 '4': np.int64, '5': np.str})
-#         df = df.rename(index = str, columns = {0: 'chr', 1: 'start', 2: 'end', \
-#                 3: 'name', 4: 'score', 5: 'strand'})
-#         return bed_fixer(df)
+def bed_parser(fn, usecols = None):
+    """
+    read BED file as pandas DataFrame
+    select specific columns, default all, (None)
+    require at least 6 columns
+    """
+    if not pathlib.Path(fn).is_file() or os.path.getsize(fn) ==  0:
+        df = pd.DataFrame(columns = ['chr', 'start', 'end', 'name', 'score', 
+                                     'strand'])
+        logging.warning('empty bed file: %s' % fn)
+        return df
+    else:
+        df = pd.read_table(fn, '\t', usecols = usecols, header = None,
+            dtype = {'0': np.str, '1': np.int64, '2': np.int64, '3': np.str, \
+                '4': np.int64, '5': np.str})
+        df = df.rename(index = str, columns = {0: 'chr', 1: 'start', 2: 'end', \
+                3: 'name', 4: 'score', 5: 'strand'})
+        return bed_fixer(df)
 
 
 

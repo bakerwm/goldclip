@@ -51,6 +51,8 @@ def anno_picker(genome, group='homer', path_data=None):
     """
     #anno_dir = os.path.join(goldclip_home, 'data', genome, 'annotation')
     # bin_dir = os.path.join(os.path.dirname(__file__), '..', 'data')
+    if path_data is None:
+        path_data = os.path.join(pathlib.Path.home(), 'data', 'genome')
     anno_dir = os.path.join(path_data, genome, 'annotation_and_repeats')
     if group == 'basic':
         group_basic = [
@@ -101,8 +103,10 @@ def bed_annotator(bed_in, genome, group='homer', path_data=None):
     """
     count reads in annos
     """
+    if path_data is None:
+        path_data = os.path.join(pathlib.Path.home(), 'data', 'genome')
     bed_prefix = os.path.splitext(os.path.basename(bed_in))[0]
-    annos = anno_picker(genome, group, path_data)
+    annos = anno_picker(genome, group, path_data=path_data)
     df = pd.DataFrame(columns=[bed_prefix])
     a = pybedtools.BedTool(bed_in)
     a_cnt = a.count() # all    
@@ -120,8 +124,6 @@ def bed_annotator(bed_in, genome, group='homer', path_data=None):
 def main():
     args = get_args()
     path_data = args.path_data
-    if path_data is None:
-        path_data = os.path.join(pathlib.Path.home(), 'data', 'genome')
     df = bed_annotator(args.i.name, args.g, args.t, path_data)
     print(df)
 

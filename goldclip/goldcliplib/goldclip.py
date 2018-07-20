@@ -234,6 +234,7 @@ class Run_all:
                            qual_min, err_rate, overlap, rm_untrim, rm_dup,
                            cut_before_trim, cut_after_trim, aligner, threshold,
                            intersect, path_data, threads, overwrite)
+        logging.info('GoldCLIP finish')
         return tmp
 
 

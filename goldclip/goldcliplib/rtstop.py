@@ -15,6 +15,7 @@ import sys
 import pandas as pd
 import goldclip
 from goldclip.helper import *
+from goldclip.bin.bed_fixer import Bed_parser
 
 
 def _df_merge(dfs, how='inner'):
@@ -96,23 +97,23 @@ def _rt_to_bed(df):
 
 
 
-def rt_merge(rt_stops, intersect = 1):
+def rt_merge(rt_stops, intersect=0):
     """
     merge and filt RTStops 
     filter by threshold for each replicate
     Input: RTStop in DataFrame (bed6+)
     """
     if len(rt_stops) == 0:
-        sys.exit('no bed file detected')
+        raise ValueError('rtstop file not found')
     elif len(rt_stops) == 1:
-        m = rt_stops[0].rename(index=int, columns={6: 'sum'})
+        m = rt_stops[0].rename(index=int, columns={6: 'sum'}) # the 7-th column
     else:
-        if intersect ==  1:
+        if intersect == 1:
             m = _df_merge(rt_stops, how='inner') # intersect
         else:
             m = _df_merge(rt_stops, how='outer') # union
             m = m.fillna(0) # replace NaN by 0
-        # rename header, rep1 to repN
+        # rename header, from rep1 to repN
         m.columns = list(m.columns[:6]) + \
             ['rep' + str(i + 1) for i in range(len(m.columns) - 6)]
     
@@ -141,7 +142,8 @@ def _bed_to_rtstop(bed, path_out, threshold):
     assert is_path(path_sub)
 
     # load BED
-    bed_df = bed_parser(bed) # convert to DataFrame
+    # bed_df = bed_parser(bed) # convert to DataFrame
+    bed_df = Bed_parser(bed).bed_fixer().bed
         
     # call RTRead
     rep_rt_read = _rt_extracter(bed_df) # rt reads [full version]
@@ -172,7 +174,8 @@ def call_rtstop(bed_files, path_out, smp_name, threshold, intersect, overwrite=F
     """
     logging.info('calling RTStops')
     if len(bed_files) == 0:
-        sys.exit('bed_files not exists')
+        raise ValueError('failed, bed files not found')
+        # sys.exit('bed_files not exists')
     # loading rep read and stops
     rep_rt_reads = []
     rep_rt_stops = []
@@ -184,11 +187,14 @@ def call_rtstop(bed_files, path_out, smp_name, threshold, intersect, overwrite=F
         path_sub = os.path.join(path_out, bed_prefix)
         rt_read = os.path.join(path_sub, bed_prefix + '.RTRead.bed') # rt reads
         rt_stop = os.path.join(path_sub, bed_prefix + '.RTStop.bed') # rt stops
+        # skip merged bed file
+        if bed_prefix == smp_name:
+            continue
         if not os.path.exists(rt_read) or not os.path.exists(rt_stop) or overwrite:
             rep_rt_read, rep_rt_stop = _bed_to_rtstop(bed, path_out, threshold)
-        else:    
-            rep_rt_read = bed_parser(rt_read)
-            rep_rt_stop = bed_parser(rt_stop)
+        else:
+            rep_rt_read = Bed_parser(rt_read).bed
+            rep_rt_stop = Bed_parser(rt_stop).bed
         rep_rt_reads.append(rep_rt_read)
         rep_rt_stops.append(rep_rt_stop)
         report_rt_stops.append(rt_stop)
@@ -198,7 +204,7 @@ def call_rtstop(bed_files, path_out, smp_name, threshold, intersect, overwrite=F
     merge_rt_read = os.path.join(path_merge, smp_name + '.RTRead.bed')
     merge_rt_stop = os.path.join(path_merge, smp_name + '.RTStop.bed')
     if not os.path.exists(merge_rt_stop) or overwrite:
-        if len(rep_rt_reads) == 0:
+        if len(rep_rt_stops) < 1:
             return None
         assert is_path(path_merge)
 
@@ -215,11 +221,10 @@ def call_rtstop(bed_files, path_out, smp_name, threshold, intersect, overwrite=F
         if len(rep_rt_stops) == 1:  # only one input file
             df['sum'] = df[0]
         df = df.loc[df.index.repeat(df['sum'])].reset_index() #repeat rows
-        merge_rt_read_stop = df.drop(['index'], axis = 1)
+        merge_rt_read_stop = df.drop(['index'], axis=1)
         merge_rt_read_stop.to_csv(merge_rt_read, '\t', header=False, index=False)
         del df # remove tmp name 
-
-    ## to report
+        ## to report
     report_rt_stops.append(merge_rt_stop)
     return report_rt_stops
 

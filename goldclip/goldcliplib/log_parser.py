@@ -3,6 +3,7 @@
 
 import os
 import re
+import multiprocessing as mp
 from goldclip.helper import *
 from goldclip.bin.bed_annotation import *
 
@@ -71,7 +72,6 @@ def cutadapt_log_parser(log):
 
 
 ## wrapper functions for bowtie mapping ##
-
 def bowtie_log_parser(path):
     """
     Parsing the log file of bowtie (to stderr)
@@ -116,7 +116,7 @@ def bowtie_log_parser(path):
 
 
 
-def rep_map_wrapper(path, save = True):
+def rep_map_wrapper(path, save=True):
     """
     wrap all bowtie log files, [only for this script] namespace 
     summarize mapping and RTStops 
@@ -124,68 +124,66 @@ def rep_map_wrapper(path, save = True):
     input: list of json files
     output: pd.DataFrame
     """
-    def _json_wrapper(file):
+    def _json_wrapper(fn): 
         """
+        Only for bowtie map statistics
         parsing only one json file
         output: type, count
         """
-        try:
-            group = file.split('.')[-2]
-            group = re.sub('map_', '', group)
-            name = os.path.basename(file).split('.')[0]
-            with open(file, 'r') as f:
-                da = json.load(f)
-            return [name, group, da['input_reads'], da['mapped'], 
-                    da['unmapped']]
-        except IOError:
-            print('json file faild: ' + file)
-    ## sort files by len
-    json_files = sorted(glob.glob(path + '/*.json'), key = len)
+        group = fn.split('.')[-3] # group name, *map_genome.bowtie.json
+        group = group.split('_')[1] # reference name
+        name = os.path.splitext(os.path.basename(fn))[0]
+        with open(fn, 'r') as f:
+            da = json.load(f)
+        df = [name, group, da['input_reads'], da['mapped'], 
+              da['unmapped']]
+        return df
+
+    # multiple json files
+    json_files = sorted(glob.glob(path + '/*.json'), key=len)
     rep_prefix = os.path.basename(path)
-    df = pd.DataFrame(columns = ['name', 'group', 'read'])
-    #for ff in json_files:
+    df = pd.DataFrame(columns=['name', 'group', 'read'])
+    # 
     for n in range(len(json_files)):
-        _, g, _, c, _ = _json_wrapper(json_files[n])
-        # the first one - genome
-        g = 'spikein' if g == 'genome' and n == 0 else g
-        df = df.append(pd.DataFrame([[rep_prefix, g, c]], 
-            columns = ['name', 'group', 'read']), ignore_index = True)
-    n1, g1, _, _, c1 = _json_wrapper(json_files[-1]) # unmap
-    df = df.append(pd.DataFrame([[n1, 'unmapped', c1]], 
-            columns = ['name', 'group', 'read']), ignore_index = True)
-    save_csv = os.path.join(os.path.dirname(path), rep_prefix + '.mapping_stat.csv')
+        _, g, _, m1, _ = _json_wrapper(json_files[n])
+        if n == 0 and len(json_files) > 1 and g == 'genome':
+            g = 'spikein' # the first one - genome
+        df = df.append(pd.DataFrame([[rep_prefix, g, m1]], 
+            columns = ['name', 'group', 'read']), ignore_index=True)
+    _, gx, _, _, un = _json_wrapper(json_files[-1]) # unmap
+    df = df.append(pd.DataFrame([[rep_prefix, 'unmapped', un]], 
+                   columns=['name', 'group', 'read']), ignore_index=True)
+    save_csv = os.path.join(os.path.dirname(path), 
+                            rep_prefix + '.mapping_stat.csv')
     if save:
-        try:
-            df.to_csv(save_csv, ',', header = True, index = False)
-        except IOError:
-            print('[failed] saving data to file: ' + save_csv)
+        df.to_csv(save_csv, ',', header=True, index=False)
     return df
 
 
 
-def merge_map_wrapper(path, save = True):
+def merge_map_wrapper(path, save=True):
     """
     count BAM files
     Output: pd.DataFrame
     """
-    b_files = sorted(glob.glob(path + '/*.bam'), key = len) # bam files
-    b_prefix = os.path.basename(path)
-    df = pd.DataFrame(columns = ['name', 'group', 'read'])
-    #for b in b_files:
-    for n in range(len(b_files)):
-        b_cnt = pysam.AlignmentFile(b_files[n], 'rb').count()
-        group = os.path.basename(b_files[n]).split('.')[-2] #
-        group = re.sub('^map_', '', group)
-        group = 'spikein' if n == 0 and group == 'genome' else group
-        df = df.append(pd.DataFrame([[b_prefix, group, b_cnt]],
-                       columns = ['name', 'group', 'read']),
-                       ignore_index = True)
-    save_csv = os.path.join(os.path.dirname(path), b_prefix + '.mapping_stat.csv')
+    bam_files = sorted(glob.glob(path + '/*.bam'), key=len) # bam files
+    merge_prefix = os.path.basename(path)
+    df = pd.DataFrame(columns=['name', 'group', 'read'])
+    bam_files = [f for f in bam_files if not os.path.islink(f)]
+    # iterate
+    for n in range(len(bam_files)):
+        b_cnt = pysam.AlignmentFile(bam_files[n], 'rb').count()
+        group = bam_files[n].split('.')[-2] # group name*.map_genome.bam
+        group = group.split('_')[1] # reference name
+        if n == 0 and len(bam_files) > 1 and group == 'genome':
+            group = 'spikein' # the first one - genome
+        dfx = pd.DataFrame([[merge_prefix, group, b_cnt]],
+                            columns=['name', 'group', 'read'])
+        df = df.append(dfx, ignore_index=True)
+    save_csv = os.path.join(os.path.dirname(path), 
+                            merge_prefix + '.mapping_stat.csv')
     if save:
-        try:
-            df.to_csv(save_csv, ',', header = True, index = False)
-        except IOError:
-            print('[failed] saving data to file: ' + save_csv)
+        df.to_csv(save_csv, ',', header=True, index=False)
     return df
 
 
@@ -199,12 +197,12 @@ def trim_wrapper(path, smp_name='demo'):
     trimming and remove duplicates
     input: /path_out/input_reads/
     """
-    j_files = sorted(glob.glob(path + '/*.cutadapt.json'))
+    json_files = sorted(glob.glob(path + '/*.cutadapt.json'))
     da = []
-    for j in j_files:
+    for j in json_files:
         id = re.sub(r'.cutadapt.json', '', os.path.basename(j))
+        nodup = os.path.join(os.path.dirname(j), id + '.reads.txt') # total reads, nodup
         d = json_reader(j)
-        nodup = os.path.join(os.path.dirname(j), id + '.clean.nodup.txt')
         with open(nodup) as f:
             d['nodup'] = next(f).rstrip()
         tooshort = int(d['raw']) - int(d['clean'])
@@ -225,58 +223,59 @@ def trim_wrapper(path, smp_name='demo'):
 
 
 ## mapping pct
-def map_wrapper(path, smp_name = 'demo'):
+def map_wrapper(path, smp_name='demo'):
     """
     mapping to various genome
     input: /path_out/genome_mapping/
     """
-    m_files = sorted(glob.glob(os.path.join(path, '*.mapping_stat.csv')))
+    m_files = glob.glob(os.path.join(path, '*.mapping_stat.csv'))
+    m_files = sorted(m_files, key=len)
     ma = []
     for m in m_files:
-        id = re.sub(r'.mapping_stat.csv', '', os.path.basename(m))
-        if id == smp_name:
+        # skip merge stat
+        m_prefix = re.sub(r'.mapping_stat.csv', '', os.path.basename(m))
+        if m_prefix == smp_name:
             continue
-        dm = pd.read_csv(m, ',').filter(items = ['group', 'read'])
-        dm.set_index('group', inplace = True)
-        #dm2 = dm.transpose().rename(index = {'read': id})
-        dm2 = dm.rename(columns = {'read': id})
+        dm = pd.read_csv(m, ',').filter(items=['group', 'read'])
+        dm.set_index('group', inplace=True)
+        dm2 = dm.rename(columns={'read': m_prefix})
         ma.append(dm2)
-    df = pd.concat(ma, axis = 1)
+    df = pd.concat(ma, axis=1)
     # add merge data
-    df.insert(0, smp_name, df.sum(axis = 1))
+    df.insert(0, smp_name, df.sum(axis=1))
     return df
 
 ##--------------------##
 ## figure 2
-def anno_run(bed, genome, group, output):
-    """
-    annotate bed files
-    output : Queue (df)
-    """
-    df = bed_annotator(bed, genome, group)
-    output.put(df)
+# def anno_run(bed, genome, group, output, path_data=None):
+#     """
+#     annotate bed files
+#     output : Queue (df)
+#     """
+#     df = bed_annotator(bed, genome, group, path_data)
+#     output.put(df)
 
 
-def _bed_anno(bed_files, genome, group):
-    """
-    intput: genome_mapping/ 
-    return the genome mapped bed files
-    """
-    #call peaks in parallel
-    output = mp.Queue()
-    processes = [mp.Process(target = anno_run, 
-        args = (b, genome, group, output)) for b in bed_files]
-    for p in processes:
-        p.start() #start process
-    for p in processes:
-        p.join() #exit completed process
-    results = [output.get() for p in processes]
-    df = pd.concat(results, axis = 1)
-    return df
+# def bed_anno(bed_files, genome, group, path_data=None):
+#     """
+#     intput: genome_mapping/ 
+#     return the genome mapped bed files
+#     """
+#     #call peaks in parallel
+#     output = mp.Queue()
+#     processes = [mp.Process(target = anno_run, 
+#         args = (b, genome, group, output)) for b in bed_files]
+#     for p in processes:
+#         p.start() #start process
+#     for p in processes:
+#         p.join() #exit completed process
+#     results = [output.get() for p in processes]
+#     df = pd.concat(results, axis = 1)
+#     return df
 
 ##--------------------##
 ## figure 3
-def bam_corr(bam1, bam2, path_out, window = 10000, multi_cores = 16):
+def bam_corr(fns, path_out, window=10000, multi_cores=8):
     """
     calculate the Pearson correlation between BAM files
     use window size: 500, 1k, 10k, 100k,
@@ -285,13 +284,15 @@ def bam_corr(bam1, bam2, path_out, window = 10000, multi_cores = 16):
     #
     use deeptools to calculate bin-count
     """
-    bam_ids = [os.path.splitext(os.path.basename(f))[0] for f in [bam1, bam2]]
+    bam_ids = [os.path.splitext(os.path.basename(f))[0] for f in fns]
+    para_bam = ' '.join(fns)
+    # bam_ids = [os.path.splitext(os.path.basename(f))[0] for f in [bam1, bam2]]
     out_npz = os.path.join(path_out, 'results.npz')
     out_tab = os.path.join(path_out, 'results.tab')
     cor_png = os.path.join(path_out, 'cor_scatter.png')
     cor_tab = os.path.join(path_out, 'cor_matrix.tab')
-    c1 = 'multiBamSummary bins --bamfiles {} {} -out {} --outRawCounts {} \
-        -p {} --binSize {}'.format(bam1, bam2, out_npz, out_tab, multi_cores,
+    c1 = 'multiBamSummary bins --bamfiles {} -out {} --outRawCounts {} \
+        -p {} --binSize {}'.format(para_bam, out_npz, out_tab, multi_cores,
         window)
     c2 = 'plotCorrelation -in {} --corMethod pearson --skipZeros \
         --removeOutliers -T {} --whatToPlot scatterplot -o {} \

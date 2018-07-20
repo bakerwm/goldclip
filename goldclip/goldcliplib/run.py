@@ -22,6 +22,7 @@ from goldclip.goldcliplib.trim import *
 from goldclip.goldcliplib.map import *
 from goldclip.goldcliplib.peak import *
 from goldclip.goldcliplib.rtstop import *
+from goldclip.goldcliplib.report import *
 
 def run_goldclip(fq_files, path_out, genome, smp_name, spikein=None,
                  is_trimmed=False, ad3=None, read12=1, len_min=15, qual_pct=80,
@@ -49,33 +50,32 @@ def run_goldclip(fq_files, path_out, genome, smp_name, spikein=None,
                               rm_dup=rm_dup, cut_before_trim=cut_before_trim,
                               cut_after_trim=cut_after_trim)
 
-    # map
-    path_map = os.path.join(path_out, 'genome_mapping')
-    map_bam_files, map_bed_files = map(clean_fq_files, smp_name, path_map, 
-                                       genome, spikein, multi_cores=threads, 
-                                       aligner=aligner, path_data=path_data, 
-                                       overwrite=overwrite)
+    # # map
+    # path_map = os.path.join(path_out, 'genome_mapping')
+    # map_bam_files, map_bed_files = map(clean_fq_files, smp_name, path_map, 
+    #                                    genome, spikein, multi_cores=threads, 
+    #                                    aligner=aligner, path_data=path_data, 
+    #                                    overwrite=overwrite)
 
-    # bigWig
-    path_bw = os.path.join(path_out, 'bigWig')
-    for bam in map_bam_files:
-        logging.info('making bigWig: %s' % os.path.basename(bam))
-        bam2bw(genome, path_bw, bam, strandness=True, binsize=10)
+    # # # bigWig
+    # # path_bw = os.path.join(path_out, 'bigWig')
+    # # for bam in map_bam_files:
+    # #     logging.info('making bigWig: %s' % os.path.basename(bam))
+    # #     bam2bw(bam, genome, path_bw, strandness=True, binsize=10)
 
+    # # # peak
+    # # path_peak1 = os.path.join(path_out, 'peaks', 'clipper')
+    # # peak_clipper_files = call_peak(genome, map_bam_files, path_peak1, 
+    # #                                tool='clipper')
+    # path_peak2 = os.path.join(path_out, 'peaks', 'pyicoclip')
+    # peak_pyicoclip_files = call_peak(genome, map_bam_files, path_peak2, 
+    #                                  tool='pyicoclip')
 
-    # peak
-    path_peak1 = os.path.join(path_out, 'peaks', 'clipper')
-    peak_clipper_files = call_peak(genome, map_bam_files, path_peak1, 
-                                   tool='clipper')
-    path_peak2 = os.path.join(path_out, 'peaks', 'pyicoclip')
-    peak_pyicoclip_files = call_peak(genome, map_bam_files, path_peak2, 
-                                     tool='pyicoclip')
-
-    # rtstop
-    path_rtstop = os.path.join(path_out, 'rtstops')
-    rtstop_files = call_rtstop(map_bed_files, path_rtstop,  smp_name,
-                               threshold=threshold, intersect=intersect,
-                               overwrite=overwrite)
+    # # rtstop
+    # path_rtstop = os.path.join(path_out, 'rtstops')
+    # rtstop_files = call_rtstop(map_bed_files, path_rtstop,  smp_name,
+    #                            threshold=threshold, intersect=intersect,
+    #                            overwrite=overwrite)
 
     # report
     tmp = goldclip_report(path_out, smp_name, genome)

@@ -57,6 +57,7 @@ def bowtie_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
     ## prefix
     fn_prefix = file_prefix(fn)[0]
     fn_prefix = re.sub('\.clean|\.nodup|\.cut', '', fn_prefix)
+    # fn_prefix = re.sub('_[12]$|_R[12]$', '', fn_prefix)
     idx_name = os.path.basename(idx)
     fn_unmap_file = os.path.join(path_out, '%s.not_%s.%s' % (fn_prefix, idx_name, fn_type))
     fn_map_prefix = os.path.join(path_out, fn_prefix)
@@ -107,6 +108,7 @@ def bowtie2_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
     ## prefix
     fn_prefix = file_prefix(fn)[0]
     fn_prefix = re.sub('\.clean|\.nodup|\.cut', '', fn_prefix)
+    # fn_prefix = re.sub('_[12]|_R[12]$', '', fn_prefix)
     idx_name = os.path.basename(idx)
     fn_unmap_file = os.path.join(path_out, '%s.not_%s.%s' % (fn_prefix, idx_name, fn_type))
     fn_map_prefix = os.path.join(path_out, fn_prefix)
@@ -163,6 +165,7 @@ def star_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
     ## prefix
     fn_prefix = file_prefix(fn)[0]
     fn_prefix = re.sub('\.clean|\.nodup|\.cut', '', fn_prefix)
+    # fn_prefix = re.sub('_[12]|_R[12]$', '', fn_prefix)
     idx_name = os.path.basename(idx)
     fn_unmap_file = os.path.join(path_out, '%s.not_%s.%s' % (fn_prefix, idx_name, fn_type))
     fn_map_prefix = os.path.join(path_out, fn_prefix)
@@ -245,11 +248,13 @@ def map(fns, smp_name, path_out, genome, spikein=None, multi_cores=1,
         logging.info('mapping file: %s' % fn)
         fn_prefix = file_prefix(fn)[0]
         fn_prefix = re.sub('\.clean|\.nodup|\.cut', '', fn_prefix)
+        # fn_prefix = re.sub('_[12]$|_R[12]$', '', fn_prefix)
         path_out_fn = os.path.join(path_out, fn_prefix)
         b = map_se_batch(fn, idxes, path_out_fn, multi_cores=multi_cores,
                          overwrite=overwrite) # list
         fn_bam_files.append(b) # bam files
-        # se_map_wrapper(b)
+        rep_map_wrapper(path_out_fn)
+        
 
     # merge bam files
     path_out_merge = os.path.join(path_out, smp_name)
@@ -258,7 +263,9 @@ def map(fns, smp_name, path_out, genome, spikein=None, multi_cores=1,
         assert is_path(path_out_merge)
         for i in range(len(fn_bam_files[0])): # merge each sub-index
             se_bam_files = [b[i] for  b in fn_bam_files]
-            merge_bam_name = smp_name + str_common(se_bam_files, suffix=True)
+            merge_suffix = str_common(se_bam_files, suffix=True)
+            merge_suffix = re.sub('^_[12]|_R[12]', '', merge_suffix)
+            merge_bam_name = smp_name + merge_suffix
             merge_bam_file = os.path.join(path_out_merge, merge_bam_name)
             merge_bed_file = re.sub('.bam$', '.bed', merge_bam_file)
             if os.path.exists(merge_bam_file) and overwrite is False:
