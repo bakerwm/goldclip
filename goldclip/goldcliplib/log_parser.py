@@ -71,6 +71,8 @@ def cutadapt_log_parser(log):
     return outfile
 
 
+
+
 ## wrapper functions for bowtie mapping ##
 def bowtie_log_parser(path):
     """
@@ -114,6 +116,48 @@ def bowtie_log_parser(path):
         json.dump(logdict, fo, indent = 4)
     return logdict
 
+
+def bowtie2_log_parser(path):
+    """
+    Parsing the log file of bowtie
+    fetch Input, unique, multiple, unmapped
+    save in JSON format
+    return dict of all values
+    """
+    logdict = {}
+    _input = []
+    _one_hit = []
+    _multi_hit = []
+    _not_hit = []
+    _rpt = []
+    with open(path, 'rt') as fi:
+        for line in fi.readlines():
+            line = line.strip()
+            _num = line.split(' ')[0]
+            _num = _num.strip('%')
+            _num = float(_num)
+            if line.endswith('reads; of these:'):
+                _input.append(_num)
+            elif ') aligned 0 times' in line:
+                _not_hit.append(_num)
+            elif ') aligned exactly 1 time' in line:
+                _one_hit.append(_num)
+            elif ') aligned >1 times' in line:
+                _multi_hit.append(_num)
+            else:
+                continue
+    # save to dict
+    logdict['input_reads'] = int(_input[0]) # first one
+    logdict['mapped'] = int(sum(_one_hit + _multi_hit))
+    logdict['unique'] = int(sum(_one_hit))
+    logdict['multi'] = int(sum(_multi_hit))
+    logdict['unmapped'] = int(_not_hit[-1]) # -m suppress
+    logdict['map_pct'] = '{:.2f}%'.\
+        format(int(logdict['mapped']) / int(logdict['input_reads'])*100)
+    json_out = os.path.splitext(path)[0] + '.json'
+    with open(json_out, 'w') as fo:
+        json.dump(logdict, fo, indent = 4)
+    return logdict
 
 
 def rep_map_wrapper(path, save=True):
