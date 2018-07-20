@@ -53,14 +53,23 @@ from goldclip.goldcliplib.log_parser import *
 
 
 
-class Goldclip_output:
+class Goldclip_output(object):
     """
     record the output of Goldclip output
     """
 
-    def __init__(self, path, smp_name, **kwargs):
-        self.project_path = path
-        self.project_name = smp_name
+    def __init__(self, path, smp_name, genome, group='homer',
+                 window=10000, multi_cores=8, **kwargs):
+        self.path = path
+        self.name = smp_name
+        self.genome = genome
+        # self.group = group
+        # self.bam2bed = bam2bed
+        # self.rep_only = rep_only
+        # self.merge_only = merge_only
+        # self.rt_reads = rt_reads
+        self.window = window
+        self.multi_cores = multi_cores
 
 
     def get_trim_stat(self):
@@ -68,7 +77,7 @@ class Goldclip_output:
         return the reads processing of fastq files
         groups: raw, too_short, PCR_dup, no_dup
         """
-        path_trim = os.path.join(self.project_path, 'input_reads')
+        path_trim = os.path.join(self.path, 'input_reads')
         dfx = [] # list of pd.DataFrame
         with os.scandir(path_trim) as it:
             for entry in it:
@@ -91,7 +100,7 @@ class Goldclip_output:
                 dfx.append(dx)
         df = pd.concat(dfx, axis=1)
         df = df.apply(pd.to_numeric)
-        df.insert(0, self.project_name, df.sum(axis=1))
+        df.insert(0, self.name, df.sum(axis=1))
         return df
 
 
@@ -100,7 +109,7 @@ class Goldclip_output:
         return the reads mapping 
         groups: spikein, MT_trRNA, genome
         """
-        path_map = os.path.join(self.project_path, 'genome_mapping')
+        path_map = os.path.join(self.path, 'genome_mapping')
         dfx = []
         with os.scandir(path_map) as it:
             for entry in it:
@@ -109,25 +118,25 @@ class Goldclip_output:
                 name = re.sub(r'.mapping_stat.csv', '', entry.name)
                 fn = os.path.join(path_map, entry.name)
                 # skip merged
-                if name == self.project_name:
+                if name == self.name:
                     continue
                 dx1 = pd.read_csv(fn, ',').filter(items=['group', 'read'])
                 dx1.set_index('group', inplace=True)
                 dx2 = dx1.rename(columns={'read': name})
                 dfx.append(dx2)
         df = pd.concat(dfx, axis=1)
-        df.insert(0, self.project_name, df.sum(axis=1))
+        df.insert(0, self.name, df.sum(axis=1))
         return df
 
 
     def get_bam_file(self, bam2bed=False, rep_only=False, merge_only=False):
         bam_files = []
-        path_map = os.path.join(self.project_path, 'genome_mapping')
+        path_map = os.path.join(self.path, 'genome_mapping')
         with os.scandir(path_map) as it:
             for entry in it:
-                if merge_only and not entry.name == self.project_name:
+                if merge_only and not entry.name == self.name:
                     continue
-                elif rep_only and entry.name == self.project_name:
+                elif rep_only and entry.name == self.name:
                     continue
                 else:
                     pass
@@ -141,15 +150,15 @@ class Goldclip_output:
     def get_peak_file(self, rep_only=False, merge_only=False):
         peak_files = []
         # tools / samples
-        path_peak = os.path.join(self.project_path, 'peaks')
+        path_peak = os.path.join(self.path, 'peaks')
         with os.scandir(path_peak) as tools:
             for tool in tools:
                 path_tool = os.path.join(path_peak, tool.name)
                 with os.scandir(path_tool) as smps:
                     for smp in smps:
-                        if merge_only and not smp.name == self.project_name:
+                        if merge_only and not smp.name == self.name:
                             continue
-                        elif rep_only and smp.name == self.project_name:
+                        elif rep_only and smp.name == self.name:
                             continue
                         else:
                             pass
@@ -162,12 +171,12 @@ class Goldclip_output:
 
     def get_rtstop_file(self, rep_only=False, merge_only=False, rt_reads=False):
         rtstop_files = []
-        path_rtstop = os.path.join(self.project_path, 'rtstops')
+        path_rtstop = os.path.join(self.path, 'rtstops')
         with os.scandir(path_rtstop) as it:
             for entry in it:
-                if merge_only and not entry.name == self.project_name:
+                if merge_only and not entry.name == self.name:
                     continue
-                elif rep_only and entry.name == self.project_name:
+                elif rep_only and entry.name == self.name:
                     continue
                 else:
                     pass
@@ -185,8 +194,8 @@ class Goldclip_output:
         trim, PCR_dup
         mapped reads
         """
-        path = self.project_path
-        smp_name = self.project_name
+        path = self.path
+        smp_name = self.name
         logging.info('figure1 reads mapping')
         figure1_path = os.path.join(path, 'results', 'read_mapping')
         figure1_txt = os.path.join(figure1_path, 'read_mapping.txt')
@@ -206,8 +215,8 @@ class Goldclip_output:
         # function
         df = bed_annotator(args.i.name, args.g, args.t, path_data)
         """
-        path = self.project_path
-        smp_name = self.project_name
+        path = self.path
+        smp_name = self.name
         logging.info('figure2 reads annotation')
         figure2_path = os.path.join(path, 'results', 'read_annotation')
         figure2_txt = os.path.join(figure2_path, 'read_annotation.txt')
@@ -232,8 +241,8 @@ class Goldclip_output:
         correlation between replicates, window with fixed width
         using deeptools
         """
-        path = self.project_path
-        smp_name = self.project_name
+        path = self.path
+        smp_name = self.name
         logging.info('figure3 reads correlation')
         figure3_path = os.path.join(path, 'results', 'read_correlation')
         assert os.path.exists(path)
@@ -252,8 +261,8 @@ class Goldclip_output:
         correlation between replicates, using rtstops counts
         using pandas
         """
-        path = self.project_path
-        smp_name = self.project_name
+        path = self.path
+        smp_name = self.name
         logging.info('figure4 rtstop correlation')
         figure4_path = os.path.join(path, 'results', 'rtstop_correlation')
         figure4_txt = os.path.join(figure4_path, 'cor_matrix.tab')
@@ -276,8 +285,8 @@ class Goldclip_output:
         """
         Number of peaks for each sample
         """
-        path = self.project_path
-        smp_name = self.project_name
+        path = self.path
+        smp_name = self.name
         logging.info('figure5 peak number')
         figure5_path = os.path.join(path, 'results', 'peak_number')
         figure5_txt = os.path.join(figure5_path, 'peak_number.txt')
@@ -297,10 +306,10 @@ class Goldclip_output:
         return df
 
 
-    def fig5_peak_length(self):
+    def fig6_peak_length(self):
         """peak length"""
-        path = self.project_path
-        smp_name = self.project_name
+        path = self.path
+        smp_name = self.name
         logging.info('figure6 peak length')
         figure6_path = os.path.join(path, 'results', 'peak_length')
         figure6_txt = os.path.join(figure6_path, 'peak_length.txt')
@@ -328,8 +337,8 @@ class Goldclip_output:
 
     def fig7_peak_anno(self, genome, group='homer'):
         """peak annotation"""
-        path = self.project_path
-        smp_name = self.project_name
+        path = self.path
+        smp_name = self.name
         logging.info('figure7 peak annotation')
         figure7_path = os.path.join(path, 'results', 'peak_annotation')
         figure7_txt = os.path.join(figure7_path, 'peak_annotation.txt')
@@ -354,8 +363,8 @@ class Goldclip_output:
 
     def fig8_peak_motif(self, genome):
         """peak motif analysis, de novo analysis"""
-        path = self.project_path
-        smp_name = self.project_nam
+        path = self.path
+        smp_name = self.nam
         logging.info('figure8 motif analysis')
         # peak_files = glob.glob(os.path.join(path, 'peaks', '*', '*', '*.fixed.bed'))
         peak_files = self.get_peak_file()
@@ -376,8 +385,8 @@ class Goldclip_output:
         conservation of peaks
         phyloP1000
         """
-        path = self.project_path
-        smp_name = self.project_name
+        path = self.path
+        smp_name = self.name
         logging.info('figure9 peak conservation')
         figure9_path = os.path.join(path, 'results', 'peak_conservation')
         assert os.path.exists(path)
@@ -401,14 +410,22 @@ class Goldclip_output:
         """
         report all figures data
         """
-        path = self.project_path
-        smp_name = self.project_name
-        df = figure1_read_map(path_out, smp_name)
-        df = figure2_read_anno(path_out, smp_name, genome, 'homer')
-        df = figure3_read_cor(path_out, smp_name)
-        df = figure4_rt_cor(path_out, smp_name)
-        df = figure5_peak_num(path_out, smp_name)
-        df = figure6_peak_len(path_out, smp_name)
-        df = figure7_peak_anno(path_out, smp_name, genome)
-        # df = figure8_motif_analysis(path_out, smp_name, genome)
-        df = figure9_peak_conservation(path_out, smp_name, genome)
+        path = self.path
+        smp_name = self.name
+        genome = self.genome
+        group = self.group
+        # bam2bed = self.bam2bed
+        # rep_only = self.rep_only
+        # merge_only = self.merge_only
+        # rt_reads = self.rt_reads
+        window = self.window
+        multi_cores = self.multi_cores
+        df = self.fig1_trim_map()
+        df = self.fig2_read_anno(genome=genome, group=group)
+        df = self.fig3_read_cor(window=window, multi_cores=multi_cores)
+        df = self.fig4_rt_cor()
+        df = self.fig5_peak_count()
+        df = self.fig6_peak_length()
+        df = self.fig7_peak_anno(genome=genome, group=group)
+        # df = self.fig8_motif_analysis(genome=genome)
+        df = self.fig9_peak_conservation(genome=genome)
