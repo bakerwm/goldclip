@@ -50,13 +50,6 @@ from goldclip.bin.bed_fixer import Bed_parser
 from goldclip.bin.bed_motif import *
 from goldclip.bin.bed_annotation import *
 from goldclip.goldcliplib.log_parser import *
-# import sys
-# import argparse
-# import json
-# import tempfile
-# import string
-# import pybedtools
-# import multiprocessing as mp
 
 
 
@@ -363,10 +356,6 @@ def figure9_peak_conservation(path, smp_name, genome):
     assert is_path(figure9_path)
     assert isinstance(smp_name, str)
     peak_files = Goldclip_output(path, smp_name).get_peak_file()
-    # peak_files = glob.glob(os.path.join(path, 'peaks', '*', '*', "*.fixed.bed"))
-    # path_peak_conservation = os.path.join(path, 'results', 'peak_conservation')
-    # if not os.path.exists(path_peak_conservation):
-        # os.makedirs(path_peak_conservation)
     for peak in peak_files:
         if file_row_counter(peak) == 0:
             continue
@@ -379,28 +368,16 @@ def figure9_peak_conservation(path, smp_name, genome):
         bed_conservation(peak, peak_sub_file + '.ext1k.con.bed', 1000, genome)
 
 
-        # t = b.split(r'/')
-        # tool, smp_id, smp_name = t[-3:]
-        # b_con_name = re.sub(r'.bed', '', smp_name)
-        # path_b_con = os.path.join(path_peak_conservation, tool, smp_id)
-        # if not os.path.exists(path_b_con):
-        #     os.makedirs(path_b_con)
-        # b_con = os.path.join(path_b_con, b_con_name)
-        # # bed_conservation(b, b_con + '.con.bed', 0, 'hg19')
-        # # bed_conservation(b, b_con + '.ext500.con.bed', 500, 'hg19')
-        # bed_conservation(b, b_con + '.ext1k.con.bed', 1000, genome)
-
-
 
 def goldclip_report(path_out, smp_name, genome):
     """ make summary and report """
     ## figure
-    # df = figure1_read_map(path_out, smp_name)
-    # df = figure2_read_anno(path_out, smp_name, genome, 'homer')
-    # df = figure3_read_cor(path_out, smp_name)
-    # df = figure4_rt_cor(path_out, smp_name)
-    # df = figure5_peak_num(path_out, smp_name)
-    # df = figure6_peak_len(path_out, smp_name)
-    # df = figure7_peak_anno(path_out, smp_name, genome)
-    # figure8_motif_analysis(path_out, smp_name, genome)
-    figure9_peak_conservation(path_out, smp_name, genome)
+    df = figure1_read_map(path_out, smp_name)
+    df = figure2_read_anno(path_out, smp_name, genome, 'homer')
+    df = figure3_read_cor(path_out, smp_name)
+    df = figure4_rt_cor(path_out, smp_name)
+    df = figure5_peak_num(path_out, smp_name)
+    df = figure6_peak_len(path_out, smp_name)
+    df = figure7_peak_anno(path_out, smp_name, genome)
+    # df = figure8_motif_analysis(path_out, smp_name, genome)
+    df = figure9_peak_conservation(path_out, smp_name, genome)
