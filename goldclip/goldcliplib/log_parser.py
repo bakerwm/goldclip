@@ -156,7 +156,29 @@ def bowtie2_log_parser(path):
         format(int(logdict['mapped']) / int(logdict['input_reads'])*100)
     json_out = os.path.splitext(path)[0] + '.json'
     with open(json_out, 'w') as fo:
-        json.dump(logdict, fo, indent = 4)
+        json.dump(logdict, fo, indent=4)
+    return logdict
+
+
+def star_log_parser(path):
+    logdict = {}
+    with open(path) as f:
+        for line in f:
+            sep = line.strip().split('|')
+            if 'Number of input reads' in line:
+                logdict['input_reads'] = int(sep[1].strip())
+            elif 'Uniquely mapped reads number' in line:
+                logdict['unique'] = int(sep[1].strip())
+            elif 'Number of reads mapped to multiple loci' in line:
+                logdict['multi'] = int(sep[1].strip())
+            else:
+                pass
+    logdict['mapped'] = logdict['unique'] + logdict['multi']
+    logdict['unmapped'] = logdict['input_reads'] - logdict['mapped']
+    logdict['map_pct'] = '{:.2f}%'.format(logdict['mapped'] / logdict['input_reads'] * 100)
+    json_out = os.path.splitext(path)[0] + '.json'
+    with open(json_out, 'wt') as fo:
+        json.dump(logdict, fo, indent=4)
     return logdict
 
 
