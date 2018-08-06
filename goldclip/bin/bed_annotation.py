@@ -122,6 +122,7 @@ def bed_annotator(bed_in, genome, group='homer', path_data=None):
         a = a_not_b # convert to a
     # not in group
     df.loc['other'] = a_cnt - df.sum(axis=0)
+    df['sample'] = bed_prefix
     return df
 
 
