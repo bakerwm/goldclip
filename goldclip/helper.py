@@ -499,6 +499,8 @@ def idx_picker(genome, group='genome', path_data=None, aligner='bowtie'):
     if path_data is None:
         path_data = os.path.join(pathlib.Path.home(), 'data', 'genome')
     idx = os.path.join(path_data, genome, aligner + '_index', group)
+    if aligner.lower() == 'star':
+        idx = os.path.join(path_data, genome, 'STAR_index')
     if is_idx(idx, aligner):
         return idx
     else:

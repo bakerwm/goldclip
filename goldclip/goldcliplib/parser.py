@@ -35,25 +35,28 @@ def add_demx_args(parser):
     parser.add_argument('--fq2', default=None, 
         metavar='READ2', type=argparse.FileType('r'),
         help='Another read of PE, does not contain barcodes (optional)')
-    parser.add_argument('--bc_file', required=True, metavar='BARCODE', 
-        type=argparse.FileType('r'),
+    parser.add_argument('--bc-file', required=True, metavar='BARCODE', 
+        dest='bc_file', type=argparse.FileType('r'),
         help='file of barcodes, only demultiplex P7 or barcode: \
         2-column <barcode> <sample_name> \
         if both P7 and barcode, require 3-column:\
         <p7-index> <barcode> <sample_name>')
     parser.add_argument('--out', required=True, metavar='OUTPUT', 
         help='The directory to save results')
-    parser.add_argument('--p7_and_bc', action='store_true',
+    parser.add_argument('--p7-and-bc', action='store_true',
+        dest='p7_and_bc',
         help='if specified, demx P7 and barcode at the same time, \
         ignore --p7')
     parser.add_argument('--p7', action='store_true',
         help = 'if specified, demx P7 index, in fastq comment-field')
-    parser.add_argument('--n_left', default=3, metavar='N-LEFT', type=int,
+    parser.add_argument('--n-left', default=3, metavar='N-LEFT', type=int,
+        dest='n_left',
         help='Number of randomers at the left of read. default: 3')
-    parser.add_argument('--n_right', default=2, metavar='N-RIGHT', type=int,
+    parser.add_argument('--n-right', default=2, metavar='N-RIGHT', type=int,
+        dest='n_right',
         help='Number of randomers at the right of read. default: 2')
-    parser.add_argument('--n_mismatch', default=0, metavar = 'Mismatches', 
-        type = int,
+    parser.add_argument('--n-mismatch', default=0, metavar = 'Mismatches', 
+        dest='n_mismatch', type = int,
         help = 'Number of mismatches allowed in barcode/index, default: 0')
     parser.add_argument('--cut', action='store_true',
         help = 'if specified, cut the barcode from read')
@@ -95,15 +98,17 @@ def add_trim_args(parser):
         help='Maximum allowed error rate, default [0.1]')
     parser.add_argument('-O', default=1, metavar='overlap',
         help='Required N bases overlap between reads and adapter, default [1]')
-    parser.add_argument('--rm_untrim', action='store_false',
+    parser.add_argument('--rm-untrim', action='store_false', dest='rm_untrim',
         help='if specified, discard reads without adapter')
-    parser.add_argument('--rm_dup', action='store_true',
+    parser.add_argument('--rm-dup', action='store_true', dest='rm_dup',
         help='if specified, remove duplicated reads' )
-    parser.add_argument('--cut_before_trim', default='0', metavar='cut1', 
+    parser.add_argument('--cut-before-trim', default='0', metavar='cut1', 
+        dest='cut_before_trim',
         help='cut bases before trimming adapter, Number of bases to cut from each \
         read, plus on 5-prime end, minus on 3-prime end, could be \
         single, or double numbers, eg: 3 or -4 or 3,-4, default [0]')
-    parser.add_argument('--cut_after_trim', default='0', metavar='cut2', 
+    parser.add_argument('--cut-after-trim', default='0', metavar='cut2', 
+        dest='cut_after_trim',
         help='cut bases after trimming adapter, Number of bases to cut from each \
         read, plus on 5-prime end, minus on 3-prime end, , could be \
         single, or double numbers, eg: 3 or -4 or 3,-4, default [0]')
@@ -241,19 +246,20 @@ def add_run_args(parser):
         help='Maximum allowed error rate, default [0.1]')
     parser.add_argument('-O', default=1, metavar='overlap',
         help='Required N bases overlap between reads and adapter, default [1]')
-    parser.add_argument('--rm_untrim', action='store_false',
+    parser.add_argument('--rm-untrim', action='store_false', dest='rm_untrim',
         help='if specified, discard reads without adapter')
-    parser.add_argument('--rm_dup', action='store_true',
+    parser.add_argument('--rm-dup', action='store_true', dest='rm_dup',
         help='if specified, remove duplicated reads' )
-    parser.add_argument('--cut_before_trim', default='0', metavar='cut1', 
+    parser.add_argument('--cut-before-trim', default='0', metavar='cut1', 
+        dest='cut_before_trim',
         help='cut bases before trimming adapter, Number of bases to cut from each \
         read, plus on 5-prime end, minus on 3-prime end, could be \
         single, or double numbers, eg: 3 or -4 or 3,-4, default [0]')
-    parser.add_argument('--cut_after_trim', default='0', metavar='cut2', 
+    parser.add_argument('--cut-after-trim', default='0', metavar='cut2', 
+        dest='cut_after_trim',
         help='cut bases after trimming adapter, Number of bases to cut from each \
         read, plus on 5-prime end, minus on 3-prime end, , could be \
         single, or double numbers, eg: 3 or -4 or 3,-4, default [0]')
-
     parser.add_argument('--aligner', default='bowtie', 
         choices=['bowtie', 'bowtie2', 'star'],
         help='Choose which aligner to use. default: bowtie')
@@ -263,7 +269,6 @@ def add_run_args(parser):
     parser.add_argument('-c', required = False, default = 0, choices = [0, 1], 
         metavar = 'intersect', type = int,
         help = 'how to merge 0=union, 1=intersect, default [0]')
-
     parser.add_argument('--path_data', 
         help='The directory of genome files, default: \
         [$HOME/data/genome/]')

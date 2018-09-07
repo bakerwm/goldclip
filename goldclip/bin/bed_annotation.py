@@ -109,15 +109,20 @@ def bed_annotator(bed_in, genome, group='homer', path_data=None):
     annos = anno_picker(genome, group, path_data=path_data)
     df = pd.DataFrame(columns=[bed_prefix])
     a = pybedtools.BedTool(bed_in)
-    a_cnt = a.count() # all    
+    a_cnt = a.count() # all
+    a_bed6 = True if a.to_dataframe().shape[1] == 6 else False # bed6 or bed3
     for n in annos:
         group = os.path.basename(n).split(r'.')[-2]
         b = pybedtools.BedTool(n)
-        a_not_b = a.intersect(b, v=True, s=True)
+        if a_bed6 is True:
+            a_not_b = a.intersect(b, v=True, s=True)
+        else:
+            a_not_b = a.intersect(b, v=True)
         df.loc[group] = a.count() - a_not_b.count()
         a = a_not_b # convert to a
     # not in group
     df.loc['other'] = a_cnt - df.sum(axis=0)
+    df['sample'] = bed_prefix
     return df
 
 
