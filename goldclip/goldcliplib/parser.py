@@ -43,6 +43,9 @@ def add_demx_args(parser):
         <p7-index> <barcode> <sample_name>')
     parser.add_argument('--out', required=True, metavar='OUTPUT', 
         help='The directory to save results')
+    parser.add_argument('--bc-in-read12', default=1, metavar='bcc-in-read12',
+        dest='bc_in_read12', chioces=[1, 2], type=int,
+        help='Barcode located in read1 or read2, [1, 2], default: 1')
     parser.add_argument('--p7-and-bc', action='store_true',
         dest='p7_and_bc',
         help='if specified, demx P7 and barcode at the same time, \
