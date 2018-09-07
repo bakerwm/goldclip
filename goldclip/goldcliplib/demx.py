@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
 Functions for demx
+to-do: barcode demx only
 """
 
 __author__ = "Ming Wang"
@@ -60,7 +61,7 @@ def bc_parser(fn):
     return bc_dict
 
 
-def bc_validater(s, bc_dict, mm = 0):
+def bc_validater(s, bc_dict, mm=0):
     """
     check whether barcode exists in list
     allow no more than {mm} mismatche(s)
@@ -87,7 +88,7 @@ def p7_split(seq_unit, p7_dict, p7_len, mm=0):
     _name, _seq, _flag, _qual = seq_unit
     s = _name.split(':')[-1]
     p7_query = s[:p7_len]
-    m = bc_validater(p7_query, p7_dict, mm = mm)
+    m = bc_validater(p7_query, p7_dict, mm=mm)
     return m
 
 
@@ -106,7 +107,7 @@ def bc_split(seq_unit, bc_dict, bc_length, n_left=3, n_right=2,
     bc_query = _seq[n_left:_x]
     bc_random = _seq[0:n_left] + _seq[_x:_y]
     # check bc_dict
-    m = bc_validater(bc_query, bc_dict, mm = mm) # barcode in list
+    m = bc_validater(bc_query, bc_dict, mm=mm) # barcode in list
     _name_list = _name.split(" ")
     _name_list.insert(1, bc_random)
     _name = " ".join(_name_list)
@@ -193,7 +194,7 @@ def p7_bc_validater(p7, bc, d, mm=0):
 
 
 
-def p7_bc_split(seq_unit, p7_bc_dict, n_left=3, n_right=2, cut=False, mm = 1):
+def p7_bc_split(seq_unit, p7_bc_dict, n_left=3, n_right=2, cut=False, mm=1):
     """
     extract P7 index from comment of fastq
     input: seq_unit : [name, seq, +, qual]
@@ -203,6 +204,8 @@ def p7_bc_split(seq_unit, p7_bc_dict, n_left=3, n_right=2, cut=False, mm = 1):
     p7_list = list(p7_bc_dict.keys())
     p7_len = int(sum(list(map(len, p7_list))) / len(p7_list))
     bc_list = get_keys(p7_bc_dict, 2)
+    bc_list.remove('undemx') #remove last 2 elements, undemx, multi
+    bc_list.remove('multi')
     bc_len = int(sum(list(map(len, bc_list))) / len(bc_list))
     # check p7 index
     s = _name.split(':')[-1]
@@ -213,7 +216,7 @@ def p7_bc_split(seq_unit, p7_bc_dict, n_left=3, n_right=2, cut=False, mm = 1):
     bc_query = _seq[n_left:_x]
     bc_random = _seq[0:n_left] + _seq[_x:_y]
     # validate barcodes
-    n = p7_bc_validater(p7_query, bc_query, p7_bc_dict, mm = mm)
+    n = p7_bc_validater(p7_query, bc_query, p7_bc_dict, mm=mm)
     # output sequence
     _name_list = _name.split(" ")
     _name_list.insert(1, bc_random)
@@ -266,7 +269,7 @@ def p7_demx_se(fn, p7_file, path_out, cut=False, mm=0):
     return p7_count
 
 
-def p7_demx_pe(fn1, fn2, p7_file, path_out, bc_in_read12=1, mm = 1):
+def p7_demx_pe(fn1, fn2, p7_file, path_out, bc_in_read12=1, mm=0):
     """
     demultiplex PE reads, index in NAME
     """
@@ -321,7 +324,7 @@ def p7_demx_pe(fn1, fn2, p7_file, path_out, bc_in_read12=1, mm = 1):
     # save report
     report_file = os.path.join(path_out, "report_demx.json")
     with open(report_file, "w") as fo:
-        json.dump(p7_count, fo, indent = 4)
+        json.dump(p7_count, fo, indent=4)
     return p7_count
 
 
@@ -329,7 +332,7 @@ def p7_demx_pe(fn1, fn2, p7_file, path_out, bc_in_read12=1, mm = 1):
 ##-----------------------------------------##
 ## demx barcode
 def bc_demx_se(fn, bc_file, path_out, n_left=3, n_right=2, 
-               cut=True, mm=1):
+               cut=True, mm=0):
     """
     demultiplex SE reads, 
     inline-barcode at the beginning of the read
@@ -377,14 +380,17 @@ def bc_demx_se(fn, bc_file, path_out, n_left=3, n_right=2,
 
 
 def bc_demx_pe(fn1, fn2, bc_file, path_out, n_left=3, n_right=2, 
-               bc_in_read12=1, cut=True, mm=1):
+               bc_in_read12=1, cut=True, mm=0):
     """
     demultiplex PE reads
     barcode located in the 5-prime end of fn1
     the second file: fn2 does not contain barcode
     """
     bc_dict = bc_parser(bc_file)
-    bc_len = int(sum(len(x) for x in list(bc_dict.keys())) / len(bc_dict))
+    bc_list = list(bc_dict.keys())
+    bc_list.remove('undemx') # remove undemx
+    bc_list.remove('multi') # remove multi
+    bc_len = int(sum(map(len, bc_list)) / len(bc_dict))
     bc_dict['undemx'] = 'undemx' # add undemx
     bc_dict['multi'] = 'multi' # barcode match multi hits
     r1_suffix = '_1.fq.gz'
@@ -458,7 +464,7 @@ def bc_demx_pe(fn1, fn2, bc_file, path_out, n_left=3, n_right=2,
 ##-----------------------------------------##
 ## demx P7 and barcode at the same time
 def p7_bc_demx_se(fn, p7_bc_file, path_out, n_left=3, n_right=2, 
-                  cut=False, mm = 0):
+                  cut=False, mm=0):
     """
     demultiplex reads by P7 index and barcode
     """

@@ -46,6 +46,7 @@ class Demx:
         r1 = self.kwargs['fq1']
         r2 = self.kwargs['fq2']
         barcode = self.kwargs['bc_file']
+        bc_in_read12 = self.kwargs['bc_in_read12']
         path_out = self.kwargs['out']
         n_left = self.kwargs['n_left']
         n_right = self.kwargs['n_right']
@@ -63,7 +64,8 @@ class Demx:
                 logging.info('demx P7 and barcode, PE reads')
                 read2 = r2.name
                 tmp = p7_bc_demx_pe(read1, read2, barcode_file, path_out,
-                                    n_left, n_right, cut=cut, mm=mm)
+                                    n_left, n_right, 
+                                    bc_in_read12=bc_in_read12,cut=cut, mm=mm)
             else:
                 logging.info('demx P7 and barcode, SE reads')
                 tmp = p7_bc_demx_se(read1, barcode_file, path_out, n_left, n_right,
@@ -72,7 +74,8 @@ class Demx:
             if r2:
                 logging.info('demx P7, PE reads')
                 read2 = r2.name
-                tmp = p7_demx_pe(read1, read2, barcode_file, path_out, mm)
+                tmp = p7_demx_pe(read1, read2, barcode_file, path_out, 
+                                 bc_in_read12=bc_in_read12, mm=mm)
             else:
                 logging.info('demx P7, SE reads')
                 tmp = p7_demx_se(read1, barcode_file, path_out, mm)
@@ -81,7 +84,8 @@ class Demx:
                 logging.info('demx barcode, PE reads')
                 read2 = r2.name
                 tmp = bc_demx_pe(read1, read2, barcode_file, path_out, n_left, 
-                                 n_right, cut=cut, mm=mm)
+                                 n_right, bc_in_read12=bc_in_read12, cut=cut, 
+                                 mm=mm)
             else:
                 if is_bioawk:
                     logging.info('demx barcode, SE reads - bioawk')
