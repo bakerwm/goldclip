@@ -29,12 +29,12 @@ def add_demx_args(parser):
     read1: {barcode} - <insert> - {N10}
     read2: {N10} - <insert> - {bracode}
     """
-    parser.add_argument('--fq1', required=True, metavar='READ1', 
-        type=argparse.FileType('r'),
-        help='Read file contains barcode at the 5-prime end, in FASTQ format')
-    parser.add_argument('--fq2', default=None, 
-        metavar='READ2', type=argparse.FileType('r'),
-        help='Another read of PE, does not contain barcodes (optional)')
+    parser.add_argument('--read1', required=True, metavar='READ1', 
+        type=argparse.FileType('r'), dest='fq1',
+        help='Read1 of PE reads, FASTQ format, support *.gz')
+    parser.add_argument('--read2', default=None, metavar='READ2', 
+        type=argparse.FileType('r'), dest='fq2',
+        help='Read2 of PE reads, FASTQ format, support *.gz, (optional)')
     parser.add_argument('--bc-file', required=True, metavar='BARCODE', 
         dest='bc_file', type=argparse.FileType('r'),
         help='file of barcodes, only demultiplex P7 or barcode: \
@@ -43,11 +43,16 @@ def add_demx_args(parser):
         <p7-index> <barcode> <sample_name>')
     parser.add_argument('--out', required=True, metavar='OUTPUT', 
         help='The directory to save results')
+    parser.add_argument('--bc-in-read12', default=1, metavar='READ12',
+        dest='bc_in_read12', choices=[1, 2], type=int,
+        help='Barcode located in read1 or read2, [1, 2], default: 1')
     parser.add_argument('--p7-and-bc', action='store_true',
         dest='p7_and_bc',
         help='if specified, demx P7 and barcode at the same time, \
-        ignore --p7')
-    parser.add_argument('--p7', action='store_true',
+        ignore --p7, --bc')
+    parser.add_argument('--bc', action='store_true', dest='bc_only',
+        help='if specified, demx barcode only.')
+    parser.add_argument('--p7', action='store_true', dest='p7_only',
         help = 'if specified, demx P7 index, in fastq comment-field')
     parser.add_argument('--n-left', default=3, metavar='N-LEFT', type=int,
         dest='n_left',
