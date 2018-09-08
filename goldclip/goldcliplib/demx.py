@@ -194,7 +194,7 @@ def p7_bc_validater(p7, bc, d, mm=0):
 
 
 
-def p7_bc_split(seq_unit, p7_bc_dict, n_left=3, n_right=2, cut=False, mm=1):
+def p7_bc_split(seq_unit, p7_bc_dict, n_left=3, n_right=2, cut=False, mm=0):
     """
     extract P7 index from comment of fastq
     input: seq_unit : [name, seq, +, qual]
@@ -388,8 +388,6 @@ def bc_demx_pe(fn1, fn2, bc_file, path_out, n_left=3, n_right=2,
     """
     bc_dict = bc_parser(bc_file)
     bc_list = list(bc_dict.keys())
-    bc_list.remove('undemx') # remove undemx
-    bc_list.remove('multi') # remove multi
     bc_len = int(sum(map(len, bc_list)) / len(bc_dict))
     bc_dict['undemx'] = 'undemx' # add undemx
     bc_dict['multi'] = 'multi' # barcode match multi hits
@@ -412,6 +410,9 @@ def bc_demx_pe(fn1, fn2, bc_file, path_out, n_left=3, n_right=2,
                                    bc_dict[bc] + r1_suffix), 'wt'),
                          gzip.open(os.path.join(path_out, 
                                    bc_dict[bc] + r2_suffix), 'wt'),]
+    ###################
+    ## iterate reads ##
+    ###################
     fq_reader1 = gzip.open if is_gz(fn1) else open
     fq_reader2 = gzip.open if is_gz(fn2) else open
     with fq_reader1(fn1, 'rt') as f1, fq_reader2(fn2, 'rt') as f2:
@@ -427,24 +428,9 @@ def bc_demx_pe(fn1, fn2, bc_file, path_out, n_left=3, n_right=2,
                              next(f2).strip(),]
                 if not seq_unit1[0].split(" ")[0] == seq_unit2[0].split(" ")[0]:
                     raise NameError(seq_unit1[0] + "\n" + seq_unit2[0])
-                if with_bc == 'read1':
-                    tag, seq_unit1 = bc_split(seq_unit1, 
-                                              bc_dict, 
-                                              bc_len, 
-                                              n_left=n_left, 
-                                              n_right=n_right, 
-                                              cut=cut, 
-                                              mm=mm)
-                elif with_bc == 'read2':
-                    tag, seq_unit2 = bc_split(seq_unit2, 
-                                              bc_dict, 
-                                              bc_len, 
-                                              n_left=n_left, 
-                                              n_right=n_right, 
-                                              cut=cut, 
-                                              mm=mm)
-                else:
-                    tag = None # undemx
+                tag, seq_unit1 = bc_split(seq_unit1, bc_dict, bc_len, 
+                                          n_left=n_left, n_right=n_right,
+                                          cut=cut, mm=mm)
                 tag = tag if tag else 'undemx' # None
                 bc_writer[tag][0].write('\n'.join(seq_unit1) + '\n')
                 bc_writer[tag][1].write('\n'.join(seq_unit2) + '\n')
@@ -452,8 +438,8 @@ def bc_demx_pe(fn1, fn2, bc_file, path_out, n_left=3, n_right=2,
             except StopIteration:
                 break
     for bc in bc_writer: 
-        bc_writer[bc][0].close() # close writers
-        bc_writer[bc][1].close() # close writers
+        bc_writer[bc][0].close()
+        bc_writer[bc][1].close()
     # save report
     report_file = os.path.join(path_out, "report_demx.json")
     with open(report_file, "w") as fo:

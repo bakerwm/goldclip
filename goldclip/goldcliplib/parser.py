@@ -49,8 +49,10 @@ def add_demx_args(parser):
     parser.add_argument('--p7-and-bc', action='store_true',
         dest='p7_and_bc',
         help='if specified, demx P7 and barcode at the same time, \
-        ignore --p7')
-    parser.add_argument('--p7', action='store_true',
+        ignore --p7, --bc')
+    parser.add_argument('--bc', action='store_true', dest='bc_only',
+        help='if specified, demx barcode only.')
+    parser.add_argument('--p7', action='store_true', dest='p7_only',
         help = 'if specified, demx P7 index, in fastq comment-field')
     parser.add_argument('--n-left', default=3, metavar='N-LEFT', type=int,
         dest='n_left',
