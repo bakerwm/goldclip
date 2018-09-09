@@ -36,9 +36,36 @@ def str_mismatch(a, b):
     return m
 
 
+def get_keys(d, levels=1):
+    """
+    return all keys of nested dict
+    support N levels
+    """
+    # for levels
+    if isinstance(d, dict) and levels == 1:
+        return list(d.keys())
+    elif levels == 2:
+        k1 = list(d.keys())
+        kn = []
+        for i in k1:
+            if isinstance(d[i], dict):
+                kn += list(d[i].keys())
+            else:
+                kn.append(i)
+        levels -= 1
+        return kn
+    elif levels > 2:
+        pass
+    else:
+        pass
+
+##------------------------------------##
+## processing barcode
+##------------------------------------##
 def bc_parser(fn):
     """
-    parse the barcode and sample name
+    parse the barcode and sample name,
+    support: P7-index, and barcode
     file format:
     <barcode> <name>
     """
@@ -63,6 +90,7 @@ def bc_parser(fn):
 
 def bc_validater(s, bc_dict, mm=0):
     """
+    support: P7-index, and barcode
     check whether barcode exists in list
     allow no more than {mm} mismatche(s)
     return name of the barcode
@@ -77,23 +105,6 @@ def bc_validater(s, bc_dict, mm=0):
         return None # undemx
 
 
-##-----------------------------------------##
-## demx P7 index   
-def p7_split(seq_unit, p7_dict, p7_len, mm=0):
-    """
-    extract P7 index from comment of fastq
-    input: seq_unit : [name, seq, +, qual]
-    name: @ST-E00310:586:HJH7JCCXY:7:1101:27275:1555 1:N:0:NCAACAAT
-    """
-    _name, _seq, _flag, _qual = seq_unit
-    s = _name.split(':')[-1]
-    p7_query = s[:p7_len]
-    m = bc_validater(p7_query, p7_dict, mm=mm)
-    return m
-
-
-##-----------------------------------------##
-## demx barcode
 def bc_split(seq_unit, bc_dict, bc_length, n_left=3, n_right=2, 
              cut=False, mm=0):
     """
@@ -117,32 +128,25 @@ def bc_split(seq_unit, bc_dict, bc_length, n_left=3, n_right=2,
     return [m, [_name, _seq, _flag, _qual]]
 
 
-##-----------------------------------------##
-## demx P7 and barcode at the same time
-def get_keys(d, levels=1):
+##------------------------------------##
+## processing P7-index, name-comment
+##------------------------------------##
+def p7_split(seq_unit, p7_dict, p7_len, mm=0):
     """
-    return all keys of nested dict
-    support N levels
+    extract P7 index from comment of fastq
+    input: seq_unit : [name, seq, +, qual]
+    name: @ST-E00310:586:HJH7JCCXY:7:1101:27275:1555 1:N:0:NCAACAAT
     """
-    # for levels
-    if isinstance(d, dict) and levels == 1:
-        return list(d.keys())
-    elif levels == 2:
-        k1 = list(d.keys())
-        kn = []
-        for i in k1:
-            if isinstance(d[i], dict):
-                kn += list(d[i].keys())
-            else:
-                kn.append(i)
-        levels -= 1
-        return kn
-    elif levels > 2:
-        pass
-    else:
-        pass
+    _name, _seq, _flag, _qual = seq_unit
+    s = _name.split(':')[-1]
+    p7_query = s[:p7_len]
+    m = bc_validater(p7_query, p7_dict, mm=mm)
+    return m
 
 
+##------------------------------------##
+## processing P7-index and barcode
+##------------------------------------##
 def p7_bc_parser(fn):
     """
     parse the barcode and sample name

@@ -34,7 +34,8 @@ logging.basicConfig(format = '[%(asctime)s] %(message)s',
                     level = logging.DEBUG)
 
 
-def bowtie_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
+# def bowtie_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
+def bowtie_se(fn, idx, path_out, multi_cores=1, unique_only=False, overwrite=False):
     """
     Mapping SE reads to idx using Bowtie
     """
@@ -43,10 +44,11 @@ def bowtie_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
     assert is_idx(idx, 'bowtie')
     path_out = os.path.dirname(fn) if path_out is None else path_out
     assert is_path(path_out)
-    assert isinstance(para, int)
     ## parameters
-    para_v = {1: '-v 2 -k 1', 2: '-v 2 -m 1'}
-    para_bowtie = para_v[para] if para in para_v else ''
+    if unique_only is True:
+        para_bowtie = '-v 2 -m 1' # report only unique map reads
+    else:
+        para_bowtie = '-v 2 -k 1' # report only one hit for each read
     fn_type = seq_type(fn)
     if fn_type == 'fasta':
         para_bowtie += ' -f'
@@ -57,7 +59,6 @@ def bowtie_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
     ## prefix
     fn_prefix = file_prefix(fn)[0]
     fn_prefix = re.sub('\.clean|\.nodup|\.cut', '', fn_prefix)
-    # fn_prefix = re.sub('_[12]$|_R[12]$', '', fn_prefix)
     idx_name = os.path.basename(idx)
     fn_unmap_file = os.path.join(path_out, '%s.not_%s.%s' % (fn_prefix, idx_name, fn_type))
     fn_map_prefix = os.path.join(path_out, fn_prefix)
@@ -85,30 +86,30 @@ def bowtie_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
 
 
 
-def bowtie2_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
+def bowtie2_se(fn, idx, path_out, multi_cores=1, unique_only=False, overwrite=False):
     """
-    Mapping SE reads to idx using Bowtie
+    Mapping SE reads to idx using Bowtie2
     """
     assert isinstance(fn, str)
     assert os.path.exists(fn)
     assert is_idx(idx, 'bowtie2')
     path_out = os.path.dirname(fn) if path_out is None else path_out
     assert is_path(path_out)
-    assert isinstance(para, int)
     ## parameters
-    para_v = {1: '--sensitive', 2: '--local'}
-    para_bowtie2 = para_v[para] if para in para_v else ''
+    if unique_only is True:
+        para_unique = '-q 10' # samtools MAPQ 10
+    else:
+        para_unique = ''
     fn_type = seq_type(fn)
     if seq_type(fn) == 'fasta':
-        para_bowtie2 += ' -f'
+        para_bowtie2 = '-f'
     elif seq_type(fn) == 'fastq':
-        para_bowtie2 += ' -q'
+        para_bowtie2 = '-q'
     else:
         raise ValueError('unknown type of reads')
     ## prefix
     fn_prefix = file_prefix(fn)[0]
     fn_prefix = re.sub('\.clean|\.nodup|\.cut', '', fn_prefix)
-    # fn_prefix = re.sub('_[12]|_R[12]$', '', fn_prefix)
     idx_name = os.path.basename(idx)
     fn_unmap_file = os.path.join(path_out, '%s.not_%s.%s' % (fn_prefix, idx_name, fn_type))
     fn_map_prefix = os.path.join(path_out, fn_prefix)
@@ -120,7 +121,7 @@ def bowtie2_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
     else:
         c1 = 'bowtie2 %s -p %s --mm --no-unal --un %s -x %s %s' % (para_bowtie2,
               multi_cores, fn_unmap_file, idx, fn)
-        c2 = 'samtools view -bhS -F 0x4 -@ %s -' % multi_cores
+        c2 = 'samtools view -bhS -F 0x4 -@ %s %s -' % (multi_cores, para_unique)
         c3 = 'samtools sort -@ %s -o %s -' % (multi_cores, fn_map_bam)
         with open(fn_map_log, 'wt') as fo:
             p1 = subprocess.Popen(shlex.split(c1), stdout=subprocess.PIPE, stderr=fo)
@@ -128,7 +129,7 @@ def bowtie2_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
             p3 = subprocess.Popen(shlex.split(c3), stdin=p2.stdout)
             p4 = p3.communicate()
         pysam.index(fn_map_bam)
-        pybedtools.BedTool(fn_map_bam).bam_to_bed().saveas(fn_map_bed)
+        # pybedtools.BedTool(fn_map_bam).bam_to_bed().saveas(fn_map_bed)
     ## statistics
     d = bowtie2_log_parser(fn_map_log)
 
@@ -136,25 +137,18 @@ def bowtie2_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
 
 
 
-def star_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
+def star_se(fn, idx, path_out, multi_cores=1, unique_only=False, overwrite=False):
     """
     mapping single read to one index using STAR
     Input: fastq|a
     Output: bam (sorted), unmapped reads
     #
-    filtering unique mapped reads by samtools
-    STAR --runMode alignReads \
-         --genomeDir /path/to/genome \
-         --readFilesIn /path/to/reads \
-         --readFilesCommand cat \
-         --outFileNamePrefix /name \
-         --runThreadN 8 \
-         --limitOutSAMoneReadBytes 1000000 \
-         --genomeLoad LoadAndKeep \
-         --limitBAMsortRAM 10000000000 \
-         --outSAMtype BAM SortedByCoordinate \
-         --outFilterMismatchNoverLMax 0.05 \
-         --seedSearchStartLmax 20
+    unique mapped:
+    --outFilterMismatchNoverLmax 0.07 \
+    --outFilterMultimapNmax 1 \
+
+    --outFilterMismatchNoverLMax 0.05 \
+    --seedSearchStartLmax 20
 
     """
     assert isinstance(fn, str)
@@ -162,11 +156,17 @@ def star_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
     assert is_idx(idx, 'star')
     path_out = os.path.dirname(fn) if path_out is None else path_out
     assert is_path(path_out)
+    ## parameters
+    if unique_only is True:
+        para_star = '--outFilterMismatchNoverLmax 0.07 --outFilterMultimapNmax 1'
+    else:
+        para_star = '--outFilterMismatchNoverLmax 0.05 --seedSearchStartLmax 20'
     ## prefix
     fn_prefix = file_prefix(fn)[0]
     fn_prefix = re.sub('\.clean|\.nodup|\.cut', '', fn_prefix)
-    # fn_prefix = re.sub('_[12]|_R[12]$', '', fn_prefix)
     idx_name = os.path.basename(idx)
+    freader = 'zcat' if is_gz(fn) else '-'
+    fn_type = seq_type(fn)
     fn_unmap_file = os.path.join(path_out, '%s.not_%s.%s' % (fn_prefix, idx_name, fn_type))
     fn_map_prefix = os.path.join(path_out, fn_prefix)
     fn_map_bam = fn_map_prefix + '.map_%s.bam' % idx_name
@@ -176,17 +176,18 @@ def star_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
     if os.path.exists(fn_map_bam) and overwrite is False:
         logging.info('file exists: %s' % fn_map_bam)
     else:
-        c1 = 'STAR --runMode alignReads --genomeDir %s --readFilesIn %s \
-              --readFilesCommand %s --outFileNamePrefix %s \
+        c1 = 'STAR --runMode alignReads \
+              --genomeDir %s \
+              --readFilesIn %s \
+              --readFilesCommand %s \
+              --outFileNamePrefix %s \
               --runThreadN %s \
               --limitOutSAMoneReadBytes 1000000 \
-              --genomeLoad LoadAndKeep \
+              --genomeLoad LoadAndRemove \
               --limitBAMsortRAM 10000000000 \
               --outSAMtype BAM SortedByCoordinate \
-              --outReadsUnmapped Fastx \
-              --outFilterMismatchNoverLmax 0.05 \
-              --seedSearchStartLmax 20'  % (idx, fn, freader, fn_map_prefix,
-                                            multi_cores)
+              --outReadsUnmapped Fastx\
+              %s' % (idx, fn, freader, fn_map_prefix, multi_cores, para_star)
         p1 = subprocess.run(shlex.split(c1))
         # rename exists file
         os.rename(fn_map_prefix + 'Aligned.sortedByCoord.out.bam', fn_map_bam)
@@ -199,7 +200,8 @@ def star_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
 
 
 
-def map_se_batch(fn, idxes, path_out, para=1, multi_cores=1, overwrite=False):
+def align_se_batch(fn, idxes, path_out, aligner='STAR', multi_cores=1, 
+                   unique_only=False, overwrite=False):
     """
     mapping fastq to multiple indexes
     """
@@ -208,52 +210,61 @@ def map_se_batch(fn, idxes, path_out, para=1, multi_cores=1, overwrite=False):
     assert isinstance(idxes, list)
     path_out = os.path.dirname(fn) if path_out is None else path_out
     assert is_path(path_out)
+    # aligner
+    if aligner.lower() == 'star':
+        aligner_se = star_se
+    elif aligner.lower() == 'bowtie2':
+        aligner_se = bowtie2_se
+    elif aligner.lower() == 'bowtie':
+        aligner_se = bowtie_se
+    else:
+        raise ValueError('unknown aligner: %s' % aligner)
     # iterate index
     fn_bam_files = []
     fn_input = fn
     for idx in idxes:
-        para = 2 if idx is idxes[-1] else para
-        fn_bam_idx, fn_unmap_idx = bowtie_se(fn_input, idx, path_out, 
-                                             para=para,
-                                             multi_cores=multi_cores,
-                                             overwrite=overwrite)
+        fn_bam_idx, fn_unmap_idx = aligner_se(fn_input, idx, path_out,
+                                              multi_cores=multi_cores,
+                                              unique_only=unique_only,
+                                              overwrite=overwrite)
         fn_input = fn_unmap_idx
         fn_bam_files.append(fn_bam_idx)
     return fn_bam_files
 
 
 
-
-def map(fns, smp_name, path_out, genome, spikein=None, multi_cores=1, 
-        aligner='bowtie', path_data=None, overwrite=False):
+def align(fns, smp_name, path_out, genome, spikein=None, multi_cores=1, 
+          aligner='bowtie', path_data=None, unique_only=False, 
+          align_to_rRNA=False, overwrite=False):
     """
-    mapping reads to multiple indexes, one-by-one
+    mapping multiple reads to multiple indexes, one-by-one
+    merge
     """
     assert isinstance(fns, list)
     assert isinstance(genome, str)
     assert isinstance(smp_name, str)
-
     # get indexes
-    sp = idx_picker(spikein, path_data=path_data, aligner='bowtie') # 
-    sg = idx_grouper(genome, path_data=path_data, aligner='bowtie') #
-    idxes = sg if spikein == genome else [sp] + sg
+    sp = idx_picker(spikein, path_data=path_data, aligner=aligner) #
+    if align_to_rRNA is True:
+        sg = idx_grouper(genome, path_data=path_data, aligner=aligner) #
+    else:
+        sg = idx_picker(genome, path_data=path_data, aligner=aligner) #
+    idxes = [sg, ] if spikein == genome else [sg, sp]
     idxes = list(filter(None.__ne__, idxes)) # idxes
     if len(idxes) == 0:
         raise ValueError('genome index not exists: ' + path_data)
-
     # mapping se reads
     fn_bam_files = []
-    # mapping 
     for fn in fns:
         logging.info('mapping file: %s' % fn)
         fn_prefix = file_prefix(fn)[0]
         fn_prefix = re.sub('\.clean|\.nodup|\.cut', '', fn_prefix)
         path_out_fn = os.path.join(path_out, fn_prefix)
-        b = map_se_batch(fn, idxes, path_out_fn, multi_cores=multi_cores,
-                         overwrite=overwrite) # list
+        b = align_se_batch(fn, idxes, path_out_fn, multi_cores=multi_cores,
+                           aligner=aligner, unique_only=unique_only, 
+                           overwrite=overwrite)
         fn_bam_files.append(b) # bam files
         rep_map_wrapper(path_out_fn)
-        
 
     # merge bam files
     path_out_merge = os.path.join(path_out, smp_name)
@@ -302,7 +313,8 @@ def map(fns, smp_name, path_out, genome, spikein=None, multi_cores=1,
             os.symlink(os.path.basename(bed_from), bed_to)
         gbed_files.append(bed_to)
 
-    return [gbam_files, gbed_files]
+    # return [gbam_files, gbed_files]
+    return gbam_files
 
 
 ## EOF

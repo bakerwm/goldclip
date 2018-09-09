@@ -126,7 +126,7 @@ def add_trim_args(parser):
 
 
 
-def add_map_args(parser):
+def add_align_args(parser):
     """
     Mapping SE read or one of PE reads to reference genome
     using bowtie, STAR, ... (universal)
@@ -145,6 +145,12 @@ def add_map_args(parser):
     parser.add_argument('-k', default='hg19', 
         metavar='Spike-in', choices=['dm3', 'hg19', 'hg38', 'mm10'],
         help='Spike-in genome : dm3, hg19, hg38, mm10, default: None')
+    parser.add_argument('--unique-only', action='store_true', 
+        dest='unique_only',
+        help='if specified, keep unique mapped reads only')
+    parser.add_argument('--align-to-rRNA', action='store_true',
+        dest='align_to_rRNA', 
+        help='if specified, remove rRNA before mapping to reference genome')
     parser.add_argument('--threads', default=1, 
         metavar='THREADS', type=int, 
         help='Number of threads to launch, default: 1.')
@@ -268,6 +274,12 @@ def add_run_args(parser):
     parser.add_argument('--aligner', default='bowtie', 
         choices=['bowtie', 'bowtie2', 'star'],
         help='Choose which aligner to use. default: bowtie')
+    parser.add_argument('--unique-only', action='store_true', 
+        dest='unique_only',
+        help='if specified, keep unique mapped reads only')
+    parser.add_argument('--align-to-rRNA', action='store_true',
+        dest='align_to_rRNA', 
+        help='if specified, remove rRNA before mapping to reference genome')
     parser.add_argument('-t', required = False, default = 1, 
         choices = list(range(1, 4)), metavar = 'threshold', type = int, 
         help = 'The threshold to filt RTStops, default [1].')

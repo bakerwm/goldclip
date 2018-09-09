@@ -34,7 +34,7 @@ subparser_demx = add_demx_args(subparser_demx)
 subparser_trim = subparsers.add_parser('trim', help='trimming reads.')
 subparser_trim = add_trim_args(subparser_trim)
 subparser_map = subparsers.add_parser('map', help='mapping reads to reference.')
-subparser_map = add_map_args(subparser_map)
+subparser_map = add_align_args(subparser_map)
 subparser_peak = subparsers.add_parser('peak', help='calling peaks.')
 subparser_peak = add_peak_args(subparser_peak)
 subparser_rtstop = subparsers.add_parser('rtstop', help='calling RT-Stops.')
@@ -56,7 +56,7 @@ class goldclip:
         elif 'trim' in self.kwargs['subcommand'].lower():
             t = Trim(**self.kwargs).run()
         elif 'map' in self.kwargs['subcommand'].lower():
-            m = Map(**self.kwargs).run()
+            m = Align(**self.kwargs).run()
         elif 'peak' in self.kwargs['subcommand'].lower():
             p = Peak(**self.kwargs).run()
         elif 'rtstop'in self.kwargs['subcommand'].lower():

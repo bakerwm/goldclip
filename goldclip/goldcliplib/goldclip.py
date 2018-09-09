@@ -133,7 +133,7 @@ class Trim:
 
 
 
-class Map:
+class Align:
     """
     Mapping SE reads to reference genome
     specify: fq, path_out, index, parameters, tools
@@ -150,13 +150,19 @@ class Map:
         path_out = self.kwargs['o']
         genome = self.kwargs['g']
         spikein = self.kwargs['k']
+        unique_only = self.kwargs['unique_only']
+        align_to_rRNA = self.kwargs['align_to_rRNA']
         multi_cores = self.kwargs['threads']
         aligner = self.kwargs['aligner']
         path_data = self.kwargs['path_data']
         overwrite = self.kwargs['overwrite']
-        tmp = map(fqs, smp_name, path_out, genome, spikein, 
-                     multi_cores=multi_cores, aligner=aligner,
-                     path_data=path_data, overwrite=overwrite)
+        tmp = align(fqs, smp_name, path_out, genome, spikein, 
+                    unique_only=unique_only, 
+                    align_to_rRNA=align_to_rRNA,
+                    multi_cores=multi_cores,
+                    aligner=aligner, 
+                    path_data=path_data, 
+                    overwrite=overwrite)
         logging.info('mapping finish!')
         return tmp[0]
 
@@ -229,6 +235,8 @@ class Run_all:
         cut_before_trim = self.kwargs['cut_before_trim']
         cut_after_trim = self.kwargs['cut_after_trim']
         aligner = self.kwargs['aligner']
+        unique_only = self.kwargs['unique_only']
+        align_to_rRNA = self.kwargs['align_to_rRNA']
         threshold = self.kwargs['t']
         intersect = self.kwargs['c']
         path_data = self.kwargs['path_data']
