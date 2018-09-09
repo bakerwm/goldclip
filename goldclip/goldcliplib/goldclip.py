@@ -12,7 +12,7 @@ __version__ = '0.0.1'
 
 from goldclip.goldcliplib.demx import *
 from goldclip.goldcliplib.trim import *
-from goldclip.goldcliplib.map import *
+from goldclip.goldcliplib.aligner import *
 from goldclip.goldcliplib.peak import *
 from goldclip.goldcliplib.rtstop import *
 from goldclip.goldcliplib.run import *

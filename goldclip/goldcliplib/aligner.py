@@ -223,6 +223,7 @@ def align_se_batch(fn, idxes, path_out, aligner='STAR', multi_cores=1,
     fn_bam_files = []
     fn_input = fn
     for idx in idxes:
+        # logging.error('idx: %s' % idx)
         fn_bam_idx, fn_unmap_idx = aligner_se(fn_input, idx, path_out,
                                               multi_cores=multi_cores,
                                               unique_only=unique_only,
@@ -247,10 +248,13 @@ def align(fns, smp_name, path_out, genome, spikein=None, multi_cores=1,
     sp = idx_picker(spikein, path_data=path_data, aligner=aligner) #
     if align_to_rRNA is True:
         sg = idx_grouper(genome, path_data=path_data, aligner=aligner) #
+        idxes = sg if spikein == genome else sg.append(sp)
     else:
         sg = idx_picker(genome, path_data=path_data, aligner=aligner) #
-    idxes = [sg, ] if spikein == genome else [sg, sp]
+        idxes = [sg, ] if spikein == genome else [sg, sp]
     idxes = list(filter(None.__ne__, idxes)) # idxes
+    # remove duplicate records, keep orders
+    idxes = list(dict.fromkeys(idxes))
     if len(idxes) == 0:
         raise ValueError('genome index not exists: ' + path_data)
     # mapping se reads

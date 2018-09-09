@@ -513,8 +513,8 @@ def idx_grouper(genome, path_data=None, aligner='bowtie'):
     return a group of indexes for genome mapping
     eg: spikein, MT_trRNA, genome
     """
-    group1 = ['viral', 'repeatRNA', 'retroviral', 'MT_trRNA', 'genome']
-    idxes = [idx_picker(genome, g, path_data=path_data, aligner=aligner) for g in group1]
+    group = ['viral', 'repeatRNA', 'retroviral', 'MT_trRNA', 'genome']
+    idxes = [idx_picker(genome, g, path_data=path_data, aligner=aligner) for g in group]
     idxes = list(filter(None.__ne__, idxes))
     return idxes
 
