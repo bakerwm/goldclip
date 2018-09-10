@@ -103,6 +103,8 @@ def ends_trimmer(fn, path_out, cut_after_trim='0', len_min=15):
         trim_3 = tmp[0] if(int(tmp[0]) < 0) else 0
     else:
         trim_5 = trim_3 = 0
+    # print('trim_5: %s' % trim_5)
+    # print('trim_3: %s' % trim_3)
     with xopen(fn, 'rt') as fi, open(fn_out_file, 'wt') as fo:
         while True:
             try:
@@ -111,8 +113,7 @@ def ends_trimmer(fn, path_out, cut_after_trim='0', len_min=15):
                                                    next(fi).strip(), 
                                                    next(fi).strip(),]
                 if len(fq_seq) < len_min + abs(trim_5) + abs(trim_3): 
-                    # skip short reads
-                    continue
+                    continue # skip short reads
                 fq_seq = fq_seq[trim_5:trim_3] if(trim_3 < 0) else fq_seq[trim_5:]
                 fq_qual = fq_qual[trim_5:trim_3] if(trim_3 < 0) else fq_qual[trim_5:]
                 fo.write('\n'.join([fq_id, fq_seq, fq_plus, fq_qual]) + '\n')
@@ -147,10 +148,9 @@ def cutadapt_cut(s, cut_para=True):
 
 
 
-def se_trimmer(fn, path_out=None, len_min=15, adapter3=None, double_trim=True, 
-               qual_min=20, err_rate=0.1, multi_cores=1, rm_untrim=False,
-               overlap=4, pcr_r2=None, truseq_p7a=None, truseq_p7b=None, 
-               truseq_p7c=None, truseq_univ=None, adapter5=None,
+def se_trimmer(fn, adapter3, path_out=None, adapter5=None, len_min=15, 
+               double_trim=False, adapter_sliding=False, qual_min=20, 
+               err_rate=0.1, multi_cores=1, rm_untrim=False, overlap=3,
                cut_before_trim=0, overwrite=False):
     """
     using cutadapt to trim SE read
@@ -163,18 +163,15 @@ def se_trimmer(fn, path_out=None, len_min=15, adapter3=None, double_trim=True,
     fn_out_file = os.path.join(path_out, file_prefix(fn)[0] + '.clean.fastq')
     log_out_file = os.path.join(path_out, file_prefix(fn)[0] + '.cutadapt.log')
     # sliding adapter3
-    ads = adapter_chopper(adapter3)
-    for i in [pcr_r2, truseq_p7a, truseq_p7b, truseq_p7c, truseq_univ]:
-        if i is None:
-            continue
-        else:
-            ads.append(i)
+    ads = [adapter3, ]
+    if adapter_sliding is True:
+        ads.append(adapter_chopper(adapter3))
     para_ad = ' '.join(['-a {}'.format(i) for i in ads])
     # for adapter5
     if isinstance(adapter5, str):
-        para_ad += ' -g %s' % adapter5
+        para_ad += ' -g %s' % adapter5    
     # for untrim
-    if rm_untrim is False:
+    if rm_untrim is True:
         fn_untrim_file = os.path.join(path_out, 
                                       file_prefix(fn)[0] + '.untrim.fastq')
         para_adx = ' --untrimmed-output=%s --cores=%s' % (fn_untrim_file, 1)
@@ -182,110 +179,118 @@ def se_trimmer(fn, path_out=None, len_min=15, adapter3=None, double_trim=True,
     else:
         para_adx = ' --cores=%s' % multi_cores
     # cut adapter *before* trimming
-    para_adx  += ' ' + cutadapt_cut(cut_before_trim)
+    if not cut_before_trim == 0:
+        para_adx = '%s %s' % (para_adx, cutadapt_cut(cut_before_trim))
+
     ## command line
-    c1 = 'cutadapt %s %s -m %s -q %s --overlap=%s --error-rate=%s --times=4 \
-          --trim-n --max-n=0.1 %s' % (para_ad, para_adx, len_min, qual_min, 
-                                      overlap, err_rate, fn)
-    c2 = 'cutadapt %s -m %s -q %s --overlap=%s --error-rate=%s --times=4 \
-          --cores=%s --trim-n --max-n=0.1 -' % (para_ad, len_min, 
-                                                      qual_min, overlap, 
-                                                      err_rate, multi_cores)
-    if not os.path.isfile(fn_out_file) or overwrite is True:
-        with open(log_out_file, 'w') as fo1, open(log_out_file, 'a') as fo2, \
-             open(fn_out_file, 'wt') as fr:
-            p1 = subprocess.Popen(shlex.split(c1), stdout=subprocess.PIPE, 
-                                  stderr=fo1)
-            p2 = subprocess.Popen(shlex.split(c2), stdin=p1.stdout, stdout=fr,
-                                  stderr=fo2)
-            p3 = p2.communicate()
-        tmp1 = cutadapt_log_parser(log_out_file) # processing log
+    if double_trim is True:
+        c1 = 'cutadapt %s %s -m %s -q %s --overlap=%s --error-rate=%s \
+              --times=1 --trim-n --max-n=0.1 %s' % (para_ad, para_adx, 
+                                                    len_min, qual_min, 
+                                                    overlap, err_rate, fn)
+        c2 = 'cutadapt %s -m %s -q %s --overlap=%s --error-rate=%s --times=1 \
+              --cores=%s --trim-n --max-n=0.1 -' % (para_ad, len_min, 
+                                                    qual_min, overlap, 
+                                                    err_rate, multi_cores)
+        if not os.path.isfile(fn_out_file) or overwrite is True:
+            with open(log_out_file, 'w') as fo1, open(log_out_file, 'a') as fo2, \
+                 open(fn_out_file, 'wt') as fr:
+                p1 = subprocess.Popen(shlex.split(c1), stdout=subprocess.PIPE, 
+                                      stderr=fo1)
+                p2 = subprocess.Popen(shlex.split(c2), stdin=p1.stdout, stdout=fr,
+                                      stderr=fo2)
+                px = p2.communicate()
+                tmp1 = cutadapt_log_parser(log_out_file) # processing log
+    else:
+        c3 = 'cutadapt %s %s -m %s -q %s --overlap=%s --error-rate=%s \
+              --times=1 --trim-n --max-n=0.1 %s' % (para_ad, para_adx, 
+                                                    len_min, qual_min, 
+                                                    overlap, err_rate, fn)
+        if not os.path.isfile(fn_out_file) or overwrite is True:
+            with open(log_out_file, 'w') as fo, open(fn_out_file, 'wt') as fr:
+                p3 = subprocess.run(shlex.split(c3), stdout=fr, stderr=fo)
+                tmp1 = cutadapt_log_parser(log_out_file) # processing log
+
     return fn_out_file
 
 
-def trim(fns, path_out, adapter3=None, len_min=15, qual_min=20,
-         err_rate=0.1, overlap=1, multi_cores=1, read12=1,
-         rm_untrim=False, pcr_r2=None, truseq_p7a=None, 
-         truseq_univ=None, adapter5=None, overwrite=False,
-         rm_dup=False, cut_before_trim='0', cut_after_trim='0'):
+
+def trim(fns, adapter3, path_out=None, adapter5=None, len_min=15, 
+         adapter_sliding=False,
+         double_trim=False, qual_min=20, err_rate=0.1, overlap=3, 
+         multi_cores=1, read12=1, rm_untrim=False, rm_dup=False, 
+         cut_before_trim='0', cut_after_trim='0', overwrite=False):
     """
     processing reads
     """
-    # default Truseq adapters
-    ad3 = 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC'
-    ad5 = 'GATCTACACTCTTTCCCTACACGACGCTCTTCCGATCT'
-    ad5rc = 'AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGTAGATC'
-    ad_p7a = 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC'
+    assert isinstance(fns, list)
+    assert isinstance(adapter3, str)
     fn_out_files = []
     for fn in fns:
         assert os.path.exists(fn)
         logging.info('trimming reads: %s' % file_prefix(fn)[0])
         if rm_dup is True:
-            if not cut_after_trim == '0':
-                fn_name = file_prefix(fn)[0] + '.clean.nodup.cut.fastq'
-            else:
+            if cut_after_trim == '0':
                 fn_name = file_prefix(fn)[0] + '.clean.nodup.fastq'
-        elif not cut_after_trim == '0':
-            fn_name = file_prefix(fn)[0] + '.clean.cut.fastq'
-        else:
+            else:
+                fn_name = file_prefix(fn)[0] + '.clean.nodup.cut.fastq'
+        elif cut_after_trim == '0':
             fn_name = file_prefix(fn)[0] + '.clean.fastq'
+        else:
+            fn_name = file_prefix(fn)[0] + '.clean.cut.fastq'
         fn_out_check = os.path.join(path_out, fn_name)
-        # file existence
         if os.path.exists(fn_out_check) and not overwrite:
             fn_out_files.append(fn_out_check)
             logging.info('file exists: %s' % fn_name)
             continue # next
-        if read12 == 1:
-            # read1 of PE reads
-            adapter3 = ad3 if adapter3 is None else adapter3
-            truseq_p7a = ad_p7a if truseq_p7a is None else truseq_p7a
-            fn_out_file = se_trimmer(fn, path_out, len_min, adapter3, 
-                                     qual_min=qual_min, 
-                                     err_rate=err_rate, 
-                                     multi_cores=multi_cores, 
-                                     overlap=overlap, 
-                                     truseq_p7a=truseq_p7a,
-                                     rm_untrim=rm_untrim,
-                                     cut_before_trim=cut_before_trim,
-                                     overwrite=overwrite)
-        elif read12 == 2:
-            # read2 or pE reads
-            adapter3 = ad5rc if adapter3 is None else adapter3
-            fn_out_file = se_trimmer(fn, path_out, len_min, adapter3,
-                                     qual_min=qual_min,
-                                     err_rate=err_rate, 
-                                     multi_cores=multi_cores, 
-                                     overlap=overlap,
-                                     rm_untrim=rm_untrim,
-                                     cut_before_trim=cut_before_trim,
-                                     overwrite=overwrite)
-        else:
-            logging.error('unknown --read12: %s' % read12)
+        fn_out_file = se_trimmer(fn, adapter3, path_out, 
+                                 len_min=len_min,
+                                 double_trim=double_trim,
+                                 adapter_sliding=adapter_sliding,
+                                 qual_min=qual_min, 
+                                 err_rate=err_rate, 
+                                 multi_cores=multi_cores, 
+                                 rm_untrim=rm_untrim,
+                                 overlap=overlap,
+                                 cut_before_trim=cut_before_trim,
+                                 overwrite=overwrite)
         ## post-processing
         if rm_dup is True:
-            if not cut_after_trim == '0':
+            if cut_after_trim == '0':
                 f1 = dup_remover(fn_out_file, path_out, q=qual_min)
-                f2 = ends_trimmer(f1, path_out, cut_after_trim=cut_after_trim, len_min=len_min)
-                os.remove(fn_out_file)                
-                os.remove(f1)
-                fn_out_file = f2
-            else:
-                f3 = dup_remover(fn_out_file, path_out, q=qual_min)
                 os.remove(fn_out_file)
+                fn_out_file = f1
+            else:
+                f2 = dup_remover(fn_out_file, path_out, q=qual_min)
+                f3 = ends_trimmer(f2, path_out, 
+                                  cut_after_trim=cut_after_trim, 
+                                  len_min=len_min)
+                os.remove(fn_out_file)                
+                os.remove(f2)
                 fn_out_file = f3
-        elif not cut_after_trim == '0':
-            f4 = ends_trimmer(fn_out_file, path_out, cut_after_trim=cut_after_trim, len_min=len_min)
-            os.remove(fn_out_file)
-            fn_out_file = f4
         else:
-            pass # return fn_out_file
+            if cut_after_trim == '0':
+                pass
+            else:
+                f4 = ends_trimmer(fn_out_file, path_out, 
+                                  cut_after_trim=cut_after_trim, 
+                                  len_min=len_min)
+                os.remove(fn_out_file)
+                fn_out_file = f4
         ## post-stat
         fn_out_files.append(fn_out_file)
         fn_n = int(file_row_counter(fn_out_file) / 4)
         fn_n_file = os.path.join(path_out, file_prefix(fn)[0] + '.reads.txt')
         with open(fn_n_file, "wt") as f:
                 f.write(str(fn_n) + '\n')
+        ## report
+        cutadapt_log = os.path.join(path_out, file_prefix(fn)[0] + '.cutadapt.json')
+        with open(cutadapt_log, 'r') as f:
+            dd = json.load(f)
+        fn_raw = int(dd['raw'])
+        logging.info('output: %d of %d (%.1f%%)' % (fn_n, fn_raw, fn_n / fn_raw * 100))
     return fn_out_files
+
 
 
 ## EOF

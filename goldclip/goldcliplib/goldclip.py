@@ -117,18 +117,20 @@ class Trim:
         err_rate = self.kwargs['e']
         threads = self.kwargs['threads']
         read12 = self.kwargs['read12']
+        double_trim = self.kwargs['double_trim']
         rm_untrim = self.kwargs['rm_untrim'],
         rm_dup = self.kwargs['rm_dup']
         cut_before_trim = self.kwargs['cut_before_trim']
         cut_after_trim = self.kwargs['cut_after_trim']
         overwrite = self.kwargs['overwrite']
-        tmp = trim(fq_files, path_out, adapter3=ad3, len_min=len_min, 
-                   qual_min=qual_min, 
-                   err_rate=err_rate, multi_cores=threads,
-                   rm_untrim=rm_untrim,
-                   overlap=overlap, read12=read12, overwrite=overwrite,
-                   rm_dup=rm_dup, cut_before_trim=cut_before_trim,
-                   cut_after_trim=cut_after_trim)
+        rm_untrim = rm_untrim[0] # is tuple, not bool? !!!! why?
+        tmp = trim(fq_files, adapter3=ad3, path_out=path_out, len_min=len_min,
+                   double_trim=double_trim, qual_min=qual_min, 
+                   err_rate=err_rate, overlap=overlap, multi_cores=threads, 
+                   read12=read12, rm_untrim=rm_untrim, rm_dup=rm_dup, 
+                   cut_before_trim=cut_before_trim, 
+                   cut_after_trim=cut_after_trim,
+                   overwrite=overwrite,)
         logging.info('trimming finish!')
 
 

@@ -82,10 +82,10 @@ def add_trim_args(parser):
     parser.add_argument('-i', nargs='+', required=True, metavar='file', 
         type=argparse.FileType('r'),
         help='reads in FASTQ format, support (*.gz), 1-4 files.')
-    parser.add_argument('-a', 
-        default=None, metavar='adapter', type=str,
+    parser.add_argument('-a', metavar='3-adapter', 
+        default='AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC',
         help='Adapter sequence in the 3 prime end of read, \
-        default [AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAGACCGATCTCGTATGCCGTCTTCTGCTTG].')
+        default [AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC]')
     parser.add_argument('-o', default=None, metavar='output', 
         help='The directory to save results.')
     parser.add_argument('--read12', type=int, default=1, metavar='read12',
@@ -98,25 +98,29 @@ def add_trim_args(parser):
     parser.add_argument('-q', default=20, metavar='quality', 
         type=int,
         help='The cutoff of base quality, default [20]')    
-    parser.add_argument('-e', default=0.1, metavar='err_rate', 
-        type=float,
+    parser.add_argument('-e', default=0.1, metavar='err_rate', type=float,
         help='Maximum allowed error rate, default [0.1]')
-    parser.add_argument('-O', default=1, metavar='overlap',
-        help='Required N bases overlap between reads and adapter, default [1]')
-    parser.add_argument('--rm-untrim', action='store_false', dest='rm_untrim',
+    parser.add_argument('-O', default=3, metavar='overlap', type=int,
+        help='Required N bases overlap between reads and adapter, default [3]')
+    parser.add_argument('--double-trim', action='store_true', 
+        dest='double_trim', help='if specified, trim adapters twice')
+
+    parser.add_argument('--rm-untrim', action='store_true', dest='rm_untrim',
         help='if specified, discard reads without adapter')
     parser.add_argument('--rm-dup', action='store_true', dest='rm_dup',
         help='if specified, remove duplicated reads' )
     parser.add_argument('--cut-before-trim', default='0', metavar='cut1', 
         dest='cut_before_trim',
-        help='cut bases before trimming adapter, Number of bases to cut from each \
-        read, plus on 5-prime end, minus on 3-prime end, could be \
-        single, or double numbers, eg: 3 or -4 or 3,-4, default [0]')
+        help='cut bases before trimming adapter, Number of bases to cut \
+              from each read, plus on 5-prime end, minus on 3-prime end, \
+              could be single, or double numbers, eg: 3 or -4 or 3,-4, \
+              default [0]')
     parser.add_argument('--cut-after-trim', default='0', metavar='cut2', 
         dest='cut_after_trim',
-        help='cut bases after trimming adapter, Number of bases to cut from each \
-        read, plus on 5-prime end, minus on 3-prime end, , could be \
-        single, or double numbers, eg: 3 or -4 or 3,-4, default [0]')
+        help='cut bases after trimming adapter, Number of bases to cut \
+              from each read, plus on 5-prime end, minus on 3-prime end, \
+              could be single, or double numbers, eg: 3 or -4 or 3,-4, \
+              default [0]')
     parser.add_argument('--overwrite', action='store_true',
         help='if spcified, overwrite exists file')
     parser.add_argument('--threads', default=1, 
