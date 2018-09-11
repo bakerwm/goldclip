@@ -18,10 +18,26 @@ class Bowtie_log(object):
     def __init__(self):
         assert isinstance(genome, str)
         self.kwargs = kwargs
-        self.kwargs['genome'] = genome
-        if not 'path_data' in kwargs:
-            self.kwargs['path_data'] = os.path.join(pathlib.Path.home(), 
-                                                    'data', 'genome')
+       
+
+    def count(self, group='total'):
+    	"""Return the number of reads for each categories
+    	group: total, unmapped, unique, multiple
+    	"""
+    	assert isinstance(group, str)
+    	if group in self.log:
+    		_num1 = re.sub(',', '', line.split()[-1])
+
+    		
+
+    def .is_file(self):
+    	"""Check the log file is exists, not empty
+    	"""
+    	pass
+
+
+
+
         
 
 
