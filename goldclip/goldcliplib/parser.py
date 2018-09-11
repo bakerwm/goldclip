@@ -104,6 +104,9 @@ def add_trim_args(parser):
         help='Required N bases overlap between reads and adapter, default [3]')
     parser.add_argument('--double-trim', action='store_true', 
         dest='double_trim', help='if specified, trim adapters twice')
+    parser.add_argument('--sliding-cut-adapter', action='store_true',
+        dest='adapter_sliding', help='if specified, chopper adapters to \
+        a group of 15 nt sequences by a sliding window.')
 
     parser.add_argument('--rm-untrim', action='store_true', dest='rm_untrim',
         help='if specified, discard reads without adapter')

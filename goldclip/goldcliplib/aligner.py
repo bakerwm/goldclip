@@ -22,7 +22,6 @@ import sys
 import re
 import shlex
 import subprocess
-# import pathlib
 import logging
 import pysam
 import pybedtools
@@ -34,7 +33,6 @@ logging.basicConfig(format = '[%(asctime)s] %(message)s',
                     level = logging.DEBUG)
 
 
-# def bowtie_se(fn, idx, path_out, para=1, multi_cores=1, overwrite=False):
 def bowtie_se(fn, idx, path_out, multi_cores=1, unique_only=False, overwrite=False):
     """
     Mapping SE reads to idx using Bowtie
@@ -129,7 +127,7 @@ def bowtie2_se(fn, idx, path_out, multi_cores=1, unique_only=False, overwrite=Fa
             p3 = subprocess.Popen(shlex.split(c3), stdin=p2.stdout)
             p4 = p3.communicate()
         pysam.index(fn_map_bam)
-        # pybedtools.BedTool(fn_map_bam).bam_to_bed().saveas(fn_map_bed)
+        pybedtools.BedTool(fn_map_bam).bam_to_bed().saveas(fn_map_bed)
     ## statistics
     d = bowtie2_log_parser(fn_map_log)
 

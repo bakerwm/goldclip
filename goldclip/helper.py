@@ -480,7 +480,8 @@ def is_idx(path, aligner='bowtie'):
         pg = os.path.join(path, 'Genome')
         flag = True if os.path.exists(pg) else False
     else:
-        p = subprocess.run(c, check=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout
+        p = subprocess.run(c, check=False, stdout=subprocess.PIPE, 
+                           stderr=subprocess.PIPE).stdout
         flag = True if len(p) > 0 else False
     return flag
 
@@ -500,7 +501,7 @@ def idx_picker(genome, group='genome', path_data=None, aligner='bowtie'):
         path_data = os.path.join(pathlib.Path.home(), 'data', 'genome')
     idx = os.path.join(path_data, genome, aligner + '_index', group)
     if aligner.lower() == 'star':
-        idx = os.path.join(path_data, genome, 'STAR_index')
+        idx = os.path.join(path_data, genome, 'STAR_index', group)
     if is_idx(idx, aligner):
         return idx
     else:
@@ -517,8 +518,6 @@ def idx_grouper(genome, path_data=None, aligner='bowtie'):
     idxes = [idx_picker(genome, g, path_data=path_data, aligner=aligner) for g in group]
     idxes = list(filter(None.__ne__, idxes))
     return idxes
-
-
 
 
 
