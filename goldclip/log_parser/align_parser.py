@@ -75,16 +75,16 @@ class Aligner_log(object):
     """
 
 
-    def __init__(self, stat):
-        self.stat = stat
+    def __init__(self, log):
+        self.log = log
         # stat
-        if isinstance(stat, Aligner_log):
-            self.stat = stat.stat
-        elif isinstance(stat, dict):
-            self.stat = stat
-        # elif isinstance(stat, io.TextIOWrapper):
-        #     self.stat = self._log_parser()
-        elif os.path.isfile(stat):
+        if isinstance(log, Aligner_log):
+            self.stat = log.stat
+        elif isinstance(log, dict):
+            self.stat = log
+        elif isinstance(log, io.TextIOWrapper):
+            self.stat = self._log_parser()
+        elif os.path.isfile(log):
             self.stat = self._log_parser()
         else:
             raise ValueError('not supported file')
@@ -94,7 +94,7 @@ class Aligner_log(object):
     def _is_file(self):
         """Check the log file is exists, not empty
         """
-        if os.path.isfile(self.stat):
+        if os.path.isfile(self.log):
             return True
         else:
             return False
@@ -103,40 +103,17 @@ class Aligner_log(object):
 
     def _is_non_empty(self):
         """Check if log file is empty"""
-        if os.path.getsize(self.stat) > 0:
+        if os.path.getsize(self.log) > 0:
             return True
         else:
             return False
 
 
 
-    def _tmp(self):
-        """Create a temp file"""
-        tmpfn = tempfile.NamedTemporaryFile(prefix='tmp',
-                                            suffix='.json',
-                                            delete=False)
-        return tmpfn.name
-
-
-
-    def saveas(self, _out=None):
-        """Make a copy of statistics of mapping results"""
-        if _out is None:
-            _out = self._tmp()
-
-        dd = self.stat
-
-        with open(_out, 'wt') as fo:
-            json.dump(dd, fo, indent=4)
-
-        return _out
-
-
-
     def _bowtie_log(self):
         """Wrapper bowtie log"""
         dd = {}
-        with open(self.stat, 'rt') as ff:
+        with open(self.log, 'rt') as ff:
             for line in ff:
                 if not ':' in line:
                     continue
@@ -166,7 +143,7 @@ class Aligner_log(object):
     def _bowtie2_log(self):
         """Wrapper bowtie2 log"""
         dd = {}
-        with open(self.stat, 'rt') as ff:
+        with open(self.log, 'rt') as ff:
             for line in ff:
                 value = line.strip().split(' ')[0]
                 if '%' in value:
@@ -191,7 +168,7 @@ class Aligner_log(object):
     def _star_log(self):
         """Wrapper STAR *Final.log"""
         dd = {}
-        with open(self.stat, 'rt') as ff:
+        with open(self.log, 'rt') as ff:
             for line in ff:
                 value = line.strip().split('|')
                 if not len(value) == 2:
@@ -222,13 +199,13 @@ class Aligner_log(object):
         1. trim "(10.00%)" 
         2. trim "blank" at both tails
         """
-        stat = self.stat
-        if isinstance(stat, dict):
-            return Aligner_log(stat)
-        elif isinstance(stat, io.TextIOWrapper):
-            line = next(stat).strip()
-        elif os.path.exists(stat):
-            with open(self.stat, 'rt') as ff:
+        log = self.log
+        if isinstance(log, dict):
+            return Aligner_log(log)
+        elif isinstance(log, io.TextIOWrapper):
+            line = next(log).strip()
+        elif os.path.exists(log):
+            with open(self.log, 'rt') as ff:
                 line = next(ff).strip()
         else:
             raise ValueError('unknown file format')
@@ -244,6 +221,31 @@ class Aligner_log(object):
             raise ValueError('unknown file format')
 
         return dd
+
+
+
+    def _tmp(self):
+        """Create a temp file"""
+        tmpfn = tempfile.NamedTemporaryFile(prefix='tmp',
+                                            suffix='.json',
+                                            delete=False)
+        return tmpfn.name
+
+
+
+    def saveas(self, _out=None):
+        """Make a copy of statistics of mapping results"""
+        log = self.log
+        if _out is None:
+            # _out = self._tmp()
+            _out = os.path.splitext(log)[0] + '.json'
+
+        dd = self.stat
+
+        with open(_out, 'wt') as fo:
+            json.dump(dd, fo, indent=4, sort_keys=True)
+
+        return _out
 
 
 ## EOF
