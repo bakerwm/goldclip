@@ -1,0 +1,6 @@
+Warning: Exhausted best-first chunk memory for read ChIPseq_dsCG9754_rep1_H3K9me3.939219 NIRVANA:278:C56ALACXX:4:1106:8114:96406 length=76 (patid 14898); skipping read
+Warning: Exhausted best-first chunk memory for read ChIPseq_dsCG9754_rep1_H3K9me3.943179 NIRVANA:278:C56ALACXX:4:1106:15876:98702 length=76 (patid 18754); skipping read
+# reads processed: 100000
+# reads with at least one reported alignment: 95709 (95.71%)
+# reads that failed to align: 4291 (4.29%)
+Reported 95709 alignments

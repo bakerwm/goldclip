@@ -14,16 +14,16 @@ import pandas as pd
 class Cutadapt_log(object):
     """Wrapper cutadapt log file"""
 
-    def __init__(self, stat):
-        self.stat = stat
+    def __init__(self, log):
+        self.log = log
         # stat
-        if isinstance(stat, Cutadapt_log):
+        if isinstance(log, Cutadapt_log):
             self.stat = stat.stat
-        elif isinstance(stat, dict):
+        elif isinstance(log, dict):
             self.stat = stat
-        elif isinstance(stat, io.TextIOWrapper):
+        elif isinstance(log, io.TextIOWrapper):
             self.stat = self._log_parser()
-        elif os.path.isfile(stat):
+        elif os.path.isfile(log):
             self.stat = self._log_parser()
         else:
             raise ValueError('not supported file')
@@ -32,7 +32,7 @@ class Cutadapt_log(object):
     def _log_parser(self):
         """Wrapper log file"""
         dd = {}
-        with open(self.stat, 'rt') as ff:
+        with open(self.log, 'rt') as ff:
             for line in ff:
                 if line.startswith('This is cutadapt'):
                     sep = line.strip().split(' ')
@@ -69,7 +69,8 @@ class Cutadapt_log(object):
     def saveas(self, _out=None):
         """Make a copy of statistics of mapping results"""
         if _out is None:
-            _out = self._tmp()
+            _out = os.path.splitext(self.log)[0] + '.json'
+            # _out = self._tmp()
 
         dd = self.stat
 
@@ -93,7 +94,7 @@ class Json_file(object):
             self.stat = self.json_reader()
         else:
             raise ValueError('unknown file format:')
-          
+
 
     def _tmp(self):
         """Create a temp file"""
@@ -101,7 +102,7 @@ class Json_file(object):
                                             suffix='.json',
                                             delete=False)
         return tmpfn.name
-        
+
 
     def json_reader(self):
         """Load json file as dict"""
@@ -128,126 +129,6 @@ class Json_file(object):
 
 
 
-class Alignments(object):
-    """Parse mapping reads in directory"""
-
-    def __init__(self, path):
-        self.path = path
-        if isinstance(path, Alignments):
-            self.stat = path.stat
-        elif isinstance(path, dict):
-            self.stat = path
-        elif os.path.exists(path):
-            if not self._get_json_files() is False:
-                self.stat = self.count_json_files()
-            elif not self._get_bam_files() is False:
-                self.stat = self.count_bam_files()
-            else:
-                raise ValueError('No bam and json files found: %s' % path)
-        else:
-            raise ValueError('unknown format')
-
-
-    def _is_non_empty(self, fn):
-        """Check if log file is empty"""
-        if os.path.getsize(fn) > 0:
-            return True
-        else:
-            return False
-
-
-    def _get_json_files(self):
-        path = self.path
-        j_files = sorted(glob.glob(path + '/*.json'), key=len)
-        j_files = [f for f in j_files if self._is_non_empty(f)] # not empty files
-        if len(j_files) > 0:
-            return j_files
-        else:
-            # raise ValueError('No json files detected in: %s' % path)
-            return False
-
-
-    # parse *.json files
-    def count_json_files(self):
-        path = self.path
-        prefix = os.path.basename(path) # sample name
-        j_files = self._get_json_files() # each group
-        df = pd.DataFrame(columns=['name', 'group', 'count'])
-        for j in j_files:
-            dd = Json_file(j).stat # count
-            # group            
-            group = j.split('.')[-3] # group name, *map_genome.bowtie.json
-            group = group.split('_')[1] # 
-            # check spike-in
-            if j_files.index(j) == 0 and group == 'genome' and len(j_files) > 1:
-                group = 'spikein'
-            num_map = dd['map']
-            df = df.append(pd.DataFrame([[prefix, group, num_map]],
-                           columns = ['name', 'group', 'count']),
-                           ignore_index=True)
-        # unmap reads
-        dd = Json_file(j_files[-1]).stat
-        unmap = dd['unmap']
-        df = df.append(pd.DataFrame([[prefix, 'unmap', unmap]],
-                       columns=['name', 'group', 'count']),
-                       ignore_index=True)
-        return df
-
-
-    def _get_bam_files(self):
-        path = self.path
-        bam_files = sorted(glob.glob(path + '/*.bam'), key=len)
-        bam_files = [f for f in bam_files if self._is_non_empty(f) 
-                     and not os.path.islink(f)] # not empty files
-        if len(bam_files) > 0:
-            return bam_files
-        else:
-            raise ValueError('No .bam files found in: %s' % path)
-
-
-    # count bam files
-    def count_bam_files(self):
-        path = self.path
-        prefix = os.path.basename(path)
-        bam_files = self._get_bam_files()
-        df = pd.DataFrame(columns=['name', 'group', 'count'])
-        for b in bam_files:
-            b_cnt = pysam.AlignmentFile(b, 'rb').count()
-            group = b.split('.')[-2] # group name*.map_genome.bam
-            group = group.split('_')[1] # reference name
-            if bam_files.index(b) == 0 and group == 'genome' and len(bam_files) > 1:
-                group = 'spikein'
-            df = df.append(pd.DataFrame([[prefix, group, b_cnt]],
-                           columns=['name', 'group', 'count']),
-                           ignore_index=True)
-        # output
-        return df
-
-
-    def _tmp(self):
-        """Create a temp file"""
-        tmpfn = tempfile.NamedTemporaryFile(prefix='tmp',
-                                            suffix='.csv',
-                                            delete=False)
-        return tmpfn.name
-
-
-    def saveas(self, _out=None):
-        """Make a copy of statistics of mapping results"""
-        path = self.path
-        if _out is None:
-            prefix = os.path.basename(path)
-            _out = os.path.join(os.path.dirname(path),
-                                prefix + '.mapping_stat.csv')
-        df = self.stat        
-
-        default_kwargs = dict(sep='\t', header=False, index=False)
-        if isinstance(_out, io.TextIOWrapper):
-            print(df.to_string(index=False, header=False, justify='left'))
-        else:
-            df.to_csv(_out, **default_kwargs)
-        
-        return _out
 
 
 
