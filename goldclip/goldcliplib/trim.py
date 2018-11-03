@@ -165,7 +165,8 @@ def se_trimmer(fn, adapter3, path_out=None, adapter5=None, len_min=15,
     # sliding adapter3
     ads = [adapter3, ]
     if adapter_sliding is True:
-        ads.append(adapter_chopper(adapter3))
+        # ads.append(adapter_chopper(adapter3))
+        ads.extend(adapter_chopper(adapter3))
     para_ad = ' '.join(['-a {}'.format(i) for i in ads])
     # for adapter5
     if isinstance(adapter5, str):
@@ -185,13 +186,16 @@ def se_trimmer(fn, adapter3, path_out=None, adapter5=None, len_min=15,
     ## command line
     if double_trim is True:
         c1 = 'cutadapt %s %s -m %s -q %s --overlap=%s --error-rate=%s \
-              --times=1 --trim-n --max-n=0.1 %s' % (para_ad, para_adx, 
+              --times=2 --trim-n --max-n=0.1 %s' % (para_ad, para_adx, 
                                                     len_min, qual_min, 
                                                     overlap, err_rate, fn)
-        c2 = 'cutadapt %s -m %s -q %s --overlap=%s --error-rate=%s --times=1 \
-              --cores=%s --trim-n --max-n=0.1 -' % (para_ad, len_min, 
-                                                    qual_min, overlap, 
-                                                    err_rate, multi_cores)
+        # c2 = 'cutadapt %s -m %s -q %s --overlap=%s --error-rate=%s --times=2 \
+        #       --cores=%s --trim-n --max-n=0.1 -' % (para_ad, len_min, 
+        #                                             qual_min, overlap, 
+        #                                             err_rate, multi_cores)
+        c2 = 'cutadapt %s -m %s --times=2 --cores=%s -' % (para_ad, 
+                                                           len_min, 
+                                                           multi_cores)
         if not os.path.isfile(fn_out_file) or overwrite is True:
             with open(log_out_file, 'w') as fo1, open(log_out_file, 'a') as fo2, \
                  open(fn_out_file, 'wt') as fr:
@@ -203,7 +207,7 @@ def se_trimmer(fn, adapter3, path_out=None, adapter5=None, len_min=15,
                 tmp1 = cutadapt_log_parser(log_out_file) # processing log
     else:
         c3 = 'cutadapt %s %s -m %s -q %s --overlap=%s --error-rate=%s \
-              --times=1 --trim-n --max-n=0.1 %s' % (para_ad, para_adx, 
+              --times=2 --trim-n --max-n=0.1 %s' % (para_ad, para_adx, 
                                                     len_min, qual_min, 
                                                     overlap, err_rate, fn)
         if not os.path.isfile(fn_out_file) or overwrite is True:
