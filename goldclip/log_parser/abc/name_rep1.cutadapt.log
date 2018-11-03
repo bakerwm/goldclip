@@ -1,0 +1,282 @@
+This is cutadapt 1.16 with Python 3.6.5
+Command line parameters: -m 15 -q 20 --overlap=3 --error-rate=0.1 --trim-n --max-n=0.1 --times=3 -a AGATCGGAAGAGCAC -a ATCGGAAGAGCACAC -a CGGAAGAGCACACGT -a GAAGAGCACACGTCT -a AGAGCACACGTCTGA -a AGCACACGTCTGAAC -a CACACGTCTGAACTC -a CACGTCTGAACTCCA -a CGTCTGAACTCCAGT -a TCTGAACTCCAGTCA --untrimmed-output=abc/name_rep1.untrim.fastq --cores=1 demo/name_rep1.fq
+Running on 1 core
+Trimming 10 adapters with at most 10.0% errors in single-end mode ...
+Finished in 4.62 s (46 us/read; 1.30 M reads/minute).
+
+=== Summary ===
+
+Total reads processed:                 100,000
+Reads with adapters:                    13,128 (13.1%)
+Reads that were too short:                  18 (0.0%)
+Reads with too many N:                       2 (0.0%)
+Reads written (passing filters):        99,980 (100.0%)
+
+Total basepairs processed:     7,392,052 bp
+Quality-trimmed:                     223 bp (0.0%)
+Total written (filtered):      7,336,020 bp (99.2%)
+
+=== Adapter 1 ===
+
+Sequence: AGATCGGAAGAGCAC; Type: regular 3'; Length: 15; Trimmed: 364 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-15 bp: 1
+
+Bases preceding removed adapters:
+  A: 26.6%
+  C: 25.3%
+  G: 27.5%
+  T: 20.6%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+3	281	1562.5	0	281
+4	65	390.6	0	65
+5	13	97.7	0	13
+7	1	6.1	0	1
+10	1	0.1	1	0 1
+11	1	0.0	1	0 1
+12	2	0.0	1	1 1
+
+=== Adapter 2 ===
+
+Sequence: ATCGGAAGAGCACAC; Type: regular 3'; Length: 15; Trimmed: 2072 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-15 bp: 1
+
+Bases preceding removed adapters:
+  A: 30.6%
+  C: 26.5%
+  G: 18.0%
+  T: 24.8%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+3	1618	1562.5	0	1618
+4	345	390.6	0	345
+5	65	97.7	0	65
+6	17	24.4	0	17
+7	12	6.1	0	12
+9	3	0.4	0	0 3
+10	1	0.1	1	0 1
+11	1	0.0	1	0 1
+12	4	0.0	1	0 4
+45	1	0.0	1	0 1
+60	1	0.0	1	0 1
+61	2	0.0	1	2
+67	1	0.0	1	1
+75	1	0.0	1	1
+
+=== Adapter 3 ===
+
+Sequence: CGGAAGAGCACACGT; Type: regular 3'; Length: 15; Trimmed: 1267 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-15 bp: 1
+
+Bases preceding removed adapters:
+  A: 30.1%
+  C: 20.3%
+  G: 26.8%
+  T: 22.9%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+3	927	1562.5	0	927
+4	227	390.6	0	227
+5	87	97.7	0	87
+6	12	24.4	0	12
+7	1	6.1	0	1
+9	2	0.4	0	1 1
+10	2	0.1	1	0 2
+11	4	0.0	1	0 4
+12	1	0.0	1	0 1
+13	2	0.0	1	0 2
+14	1	0.0	1	0 1
+20	1	0.0	1	1
+
+=== Adapter 4 ===
+
+Sequence: GAAGAGCACACGTCT; Type: regular 3'; Length: 15; Trimmed: 3217 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-15 bp: 1
+
+Bases preceding removed adapters:
+  A: 43.1%
+  C: 18.1%
+  G: 15.8%
+  T: 23.0%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+3	2199	1562.5	0	2199
+4	595	390.6	0	595
+5	318	97.7	0	318
+6	75	24.4	0	75
+7	10	6.1	0	10
+8	3	1.5	0	3
+9	4	0.4	0	0 4
+10	6	0.1	1	0 6
+11	5	0.0	1	0 5
+12	1	0.0	1	0 1
+53	1	0.0	1	1
+
+=== Adapter 5 ===
+
+Sequence: AGAGCACACGTCTGA; Type: regular 3'; Length: 15; Trimmed: 638 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-15 bp: 1
+
+Bases preceding removed adapters:
+  A: 25.5%
+  C: 25.5%
+  G: 30.6%
+  T: 18.3%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+4	511	390.6	0	511
+5	86	97.7	0	86
+6	31	24.4	0	31
+7	6	6.1	0	6
+9	2	0.4	0	0 2
+10	1	0.1	1	0 1
+11	1	0.0	1	0 1
+
+=== Adapter 6 ===
+
+Sequence: AGCACACGTCTGAAC; Type: regular 3'; Length: 15; Trimmed: 2057 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-15 bp: 1
+
+Bases preceding removed adapters:
+  A: 32.2%
+  C: 29.8%
+  G: 15.4%
+  T: 22.7%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+3	1509	1562.5	0	1509
+4	405	390.6	0	405
+5	103	97.7	0	103
+6	27	24.4	0	27
+7	5	6.1	0	5
+9	3	0.4	0	1 2
+10	2	0.1	1	0 2
+11	1	0.0	1	0 1
+12	1	0.0	1	0 1
+14	1	0.0	1	0 1
+
+=== Adapter 7 ===
+
+Sequence: CACACGTCTGAACTC; Type: regular 3'; Length: 15; Trimmed: 1953 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-15 bp: 1
+
+Bases preceding removed adapters:
+  A: 30.6%
+  C: 26.8%
+  G: 17.7%
+  T: 25.0%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+3	1290	1562.5	0	1290
+4	520	390.6	0	520
+5	103	97.7	0	103
+6	24	24.4	0	24
+7	9	6.1	0	9
+10	4	0.1	1	0 4
+11	3	0.0	1	0 3
+
+=== Adapter 8 ===
+
+Sequence: CACGTCTGAACTCCA; Type: regular 3'; Length: 15; Trimmed: 289 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-15 bp: 1
+
+Bases preceding removed adapters:
+  A: 23.2%
+  C: 27.0%
+  G: 22.1%
+  T: 27.7%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+4	216	390.6	0	216
+5	48	97.7	0	48
+6	17	24.4	0	17
+7	3	6.1	0	3
+8	1	1.5	0	1
+9	1	0.4	0	0 1
+10	1	0.1	1	0 1
+11	1	0.0	1	0 1
+12	1	0.0	1	0 1
+
+=== Adapter 9 ===
+
+Sequence: CGTCTGAACTCCAGT; Type: regular 3'; Length: 15; Trimmed: 1548 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-15 bp: 1
+
+Bases preceding removed adapters:
+  A: 17.1%
+  C: 23.6%
+  G: 24.0%
+  T: 35.3%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+3	1187	1562.5	0	1187
+4	273	390.6	0	273
+5	71	97.7	0	71
+6	12	24.4	0	12
+7	3	6.1	0	3
+9	1	0.4	0	0 1
+55	1	0.0	1	1
+
+=== Adapter 10 ===
+
+Sequence: TCTGAACTCCAGTCA; Type: regular 3'; Length: 15; Trimmed: 2589 times.
+
+No. of allowed errors:
+0-9 bp: 0; 10-15 bp: 1
+
+Bases preceding removed adapters:
+  A: 21.4%
+  C: 25.5%
+  G: 14.1%
+  T: 39.0%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+3	2006	1562.5	0	2006
+4	437	390.6	0	437
+5	102	97.7	0	102
+6	31	24.4	0	31
+7	3	6.1	0	3
+9	2	0.4	0	0 2
+10	4	0.1	1	0 4
+11	1	0.0	1	0 1
+12	2	0.0	1	0 2
+41	1	0.0	1	0 1
+

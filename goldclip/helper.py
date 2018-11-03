@@ -494,8 +494,10 @@ def idx_picker(genome, group='genome', path_data=None, aligner='bowtie'):
     #
     default: path ~/data/genome/
     """
-    assert isinstance(genome, str)
     assert isinstance(group, str)
+    # assert isinstance(genome, str)
+    if genome is None:
+        return None    
     if path_data is None:
         path_data = os.path.join(pathlib.Path.home(), 'data', 'genome')
     idx = os.path.join(path_data, genome, aligner + '_index', group)
@@ -513,11 +515,10 @@ def idx_grouper(genome, path_data=None, aligner='bowtie'):
     return a group of indexes for genome mapping
     eg: spikein, MT_trRNA, genome
     """
-    group = ['viral', 'repeatRNA', 'retroviral', 'MT_trRNA', 'genome']
-    idxes = [idx_picker(genome, g, path_data=path_data, aligner=aligner) for g in group]
+    group1 = ['viral', 'repeatRNA', 'retroviral', 'MT_trRNA', 'genome']
+    idxes = [idx_picker(genome, g, path_data=path_data, aligner=aligner) for g in group1]
     idxes = list(filter(None.__ne__, idxes))
     return idxes
-
 
 
 

@@ -1,0 +1,8 @@
+{
+    "version": "1.16",
+    "python": "3.6.5",
+    "cmd": " -m 15 -q 20 --overlap=3 --error-rate=0.1 --trim-n --max-n=0.1 --times=3 -a AGATCGGAAGAGCAC -a ATCGGAAGAGCACAC -a CGGAAGAGCACACGT -a GAAGAGCACACGTCT -a AGAGCACACGTCTGA -a AGCACACGTCTGAAC -a CACACGTCTGAACTC -a CACGTCTGAACTCCA -a CGTCTGAACTCCAGT -a TCTGAACTCCAGTCA --untrimmed-output=abc/name_rep1.untrim.fastq --cores=1 demo/name_rep1.fq",
+    "total": 100000,
+    "clean": 99980,
+    "pct": "100.0%"
+}
