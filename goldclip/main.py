@@ -27,23 +27,23 @@ subparsers = parser.add_subparsers(help='sub-commands.', dest='subcommand')
 subparsers.required = True
 
 ## options for sub-programs
-subparser_demx = subparsers.add_parser('run', help='running goldclip from fastq to peaks.')
+subparser_demx = subparsers.add_parser('run', help='running goldclip pipeline from fastq to peaks.')
 subparser_demx = add_run_args(subparser_demx)
-subparser_demx = subparsers.add_parser('demx', help='demultiplexing illumina reads.')
-subparser_demx = add_demx_args(subparser_demx)
+# subparser_demx = subparsers.add_parser('demx', help='demultiplexing illumina reads.')
+# subparser_demx = add_demx_args(subparser_demx)
 subparser_trim = subparsers.add_parser('trim', help='trimming reads.')
 subparser_trim = add_trim_args(subparser_trim)
-subparser_align = subparsers.add_parser('align', help='mapping reads to reference.')
+subparser_align = subparsers.add_parser('align', help='alignment reads to reference genome.')
 subparser_align = add_align_args(subparser_align)
-subparser_peak = subparsers.add_parser('peak', help='calling peaks.')
+subparser_peak = subparsers.add_parser('call-peak', help='calling peaks.')
 subparser_peak = add_peak_args(subparser_peak)
-subparser_rtstop = subparsers.add_parser('rtstop', help='calling RT-Stops.')
+subparser_rtstop = subparsers.add_parser('call-rtstop', help='calling RT-Stops.')
 subparser_rtstop = add_rtstop_args(subparser_rtstop)
 subparser_report = subparsers.add_parser('report', help='making a report for the project.')
 subparser_report = add_report_args(subparser_report)
 
 
-class goldclip:
+class Goldclip:
 
     def __init__(self, *args, **kwargs):
         self.kwargs = kwargs
@@ -71,7 +71,7 @@ def main(flags=None):
     if flags == None:
         flags = sys.argv[1:]
     flags = vars(parser.parse_args(flags))
-    goldclip(**flags).start_process()
+    Goldclip(**flags).start_process()
 
 
 if __name__ == '__main__':
