@@ -221,37 +221,60 @@ class Run_all:
 
     def run(self):
         logging.info('GoldCLIP start')
-        fq_files = [f.name for f in self.kwargs['i']]
-        path_out = self.kwargs['o']
-        genome = self.kwargs['g']
-        smp_name = self.kwargs['n']
-        spikein = self.kwargs['k']
-        is_trimmed = self.kwargs['trimmed']
-        ad3 = self.kwargs['a']
-        read12 = self.kwargs['read12']
-        len_min = self.kwargs['m']
-        qual_pct = self.kwargs['p']
-        qual_min = self.kwargs['q']
-        err_rate = self.kwargs['e']
-        overlap = self.kwargs['O']
-        rm_untrim = self.kwargs['rm_untrim'],
-        rm_dup = self.kwargs['rm_dup']
-        cut_before_trim = self.kwargs['cut_before_trim']
-        cut_after_trim = self.kwargs['cut_after_trim']
-        aligner = self.kwargs['aligner']
-        unique_only = self.kwargs['unique_only']
-        align_to_rRNA = self.kwargs['align_to_rRNA']
-        threshold = self.kwargs['t']
-        intersect = self.kwargs['c']
-        path_data = self.kwargs['path_data']
-        threads = self.kwargs['threads']
-        overwrite = self.kwargs['overwrite']
-        tmp = run_goldclip(fq_files, path_out, genome, smp_name, spikein,
-                           is_trimmed, ad3, read12, len_min, qual_pct,
-                           qual_min, err_rate, overlap, rm_untrim, rm_dup,
-                           cut_before_trim, cut_after_trim, aligner, threshold,
-                           intersect, path_data, threads, overwrite)
+
+        tmp = run_goldclip(
+            fq_files = [f.name for f in self.kwargs['i']],
+            path_out = self.kwargs['o'],
+            genome = self.kwargs['g'],
+            smp_name = self.kwargs['n'],
+            spikein = self.kwargs['k'],
+            is_trimmed = self.kwargs['trimmed'],
+            ad3 = self.kwargs['a'],
+            read12 = self.kwargs['read12'],
+            len_min = self.kwargs['m'],
+            qual_pct = self.kwargs['p'],
+            qual_min = self.kwargs['q'],
+            err_rate = self.kwargs['e'],
+            overlap = self.kwargs['O'],
+            rm_untrim = self.kwargs['rm_untrim'],
+            rm_dup = self.kwargs['rm_dup'],
+            cut_before_trim = self.kwargs['cut_before_trim'],
+            cut_after_trim = self.kwargs['cut_after_trim'],
+            aligner = self.kwargs['aligner'],
+            # unique_only = self.kwargs['unique_only'],
+            # align_to_rRNA = self.kwargs['align_to_rRNA'],
+            threshold = self.kwargs['t'],
+            intersect = self.kwargs['c'],
+            path_data = self.kwargs['path_data'],
+            threads = self.kwargs['threads'],
+            overwrite = self.kwargs['overwrite'])
+
+            # fq_files=fq_files, 
+            # path_out=path_out, 
+            # genome=genome, 
+            # smp_name=smp_name,
+            # spikein=spikein,
+            # is_trimmed=is_trimmed,
+            # ad3=ad3,
+            # read12=read12,
+            # len_min=len_min,
+            # qual_pct=qual_pct,
+            # qual_min=qual_min,
+            # err_rate=err_rate,
+            # overlap=overlap,
+            # rm_untrim=rm_untrim,
+            # rm_dup=rm_dup,
+            # cut_before_trim=cut_before_trim,
+            # cut_after_trim=cut_after_trim,
+            # aligner=aligner,
+            # threshold=threshold,
+            # intersect=intersect,
+            # path_data=path_data,
+            # threads=threads,
+            # overwrite=overwrite)
+
         logging.info('GoldCLIP finish')
+
         return tmp
 
 
