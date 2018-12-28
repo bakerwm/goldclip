@@ -10,95 +10,14 @@ __version__ = '0.0.2'
 
 
 import sys
-# from goldclip.goldcliplib.demx import *
-# from goldclip.goldcliplib.aligner import *
 from goldclip.helper import BAM
-from goldclip.goldcliplib.alignment import Alignment
 from goldclip.goldcliplib.trim import Trimmer
+from goldclip.goldcliplib.alignment import Alignment
 from goldclip.goldcliplib.peak import *
 from goldclip.goldcliplib.rtstop import *
 from goldclip.goldcliplib.run import *
 from goldclip.goldcliplib.report import *
-
-
-# class Demx:
-
-#     """
-#     processing GoldCLIP illumina datasets
-#     only one of the PE reads
-#     ## type1: goldclip_version_1
-#     read1: {NNN} - {bc} - {NN} - <insert>
-
-#     ## type2: goldclip_version_2
-#     read1: {N10} - <insert> - A{barcode}
-#     read2: {barcode}A - <insert> - {N10}
-
-#     ## type3: eCLIP
-#     read1: {barcode} - <insert> - {N10}
-#     read2: {N10} - <insert> - {bracode}
-
-#     """
-
-#     def __init__(self, *args, **kwargs):
-#         self.kwargs = kwargs
-
-
-#     def run(self):
-#         """run demx"""
-#         r1 = self.kwargs['fq1']
-#         r2 = self.kwargs['fq2']
-#         barcode = self.kwargs['bc_file']
-#         bc_in_read12 = self.kwargs['bc_in_read12']
-#         path_out = self.kwargs['out']
-#         n_left = self.kwargs['n_left']
-#         n_right = self.kwargs['n_right']
-#         is_bioawk = self.kwargs['bioawk']
-#         bc = self.kwargs['bc_only']
-#         p7 = self.kwargs['p7_only']
-#         p7_and_bc = self.kwargs['p7_and_bc']
-#         mm = self.kwargs['n_mismatch']
-#         cut = self.kwargs['cut']
-#         # demx p7, then barcode
-#         read1 = r1.name
-#         barcode_file = barcode.name
-#         assert is_path(path_out)
-#         if p7_and_bc: # demx both p7 and barcode
-#             if r2:
-#                 logging.info('demx P7 and barcode, PE reads')
-#                 read2 = r2.name
-#                 tmp = p7_bc_demx_pe(read1, read2, barcode_file, path_out,
-#                                     n_left, n_right, 
-#                                     bc_in_read12=bc_in_read12,cut=cut, mm=mm)
-#             else:
-#                 logging.info('demx P7 and barcode, SE reads')
-#                 tmp = p7_bc_demx_se(read1, barcode_file, path_out, n_left, n_right,
-#                                     cut=cut, mm=mm)
-#         elif p7: # require demx p7, in fastq-comment-field
-#             if r2:
-#                 logging.info('demx P7, PE reads')
-#                 read2 = r2.name
-#                 tmp = p7_demx_pe(read1, read2, barcode_file, path_out, 
-#                                  bc_in_read12=bc_in_read12, mm=mm)
-#             else:
-#                 logging.info('demx P7, SE reads')
-#                 tmp = p7_demx_se(read1, barcode_file, path_out, mm)
-#         else: # only barcode
-#             if r2:
-#                 logging.info('demx barcode, PE reads')
-#                 read2 = r2.name
-#                 tmp = bc_demx_pe(read1, read2, barcode_file, path_out, n_left, 
-#                                  n_right, bc_in_read12=bc_in_read12, cut=cut, 
-#                                  mm=mm)
-#             else:
-#                 if is_bioawk:
-#                     logging.info('demx barcode, SE reads - bioawk')
-#                     tmp = demx_se_bioawk(read1, barcode_file, path_out, n_left,
-#                                          n_right)
-#                 else:
-#                     logging.info('demx barcode, SE reads')
-#                     tmp = bc_demx_se(read1, barcode_file, path_out, n_left,
-#                                      n_right, cut=cut, mm=mm)
-#         logging.info('demx finish!')
+from goldclip.goldcliplib.default_arguments import Argument
 
 
 class Trim:
@@ -166,7 +85,7 @@ class Trim:
 class Align:
     """
     Mapping SE reads to reference genome
-    specify: fq, path_out, index, parameters, tools
+    specify: fq, path_out, index, parameters, 
     """
 
     def __init__(self, **kwargs):
@@ -206,8 +125,8 @@ class Peak:
         bam_files = [f.name for f in self.kwargs['i']]
         genome = self.kwargs['g']
         path_out = self.kwargs['o']
-        tool = self.kwargs['peak_caller']
-        peak_files = call_peak(genome, bam_files, path_out, tool)
+        peak_caller = self.kwargs['peak_caller']
+        peak_files = call_peak(genome, bam_files, path_out, peak_caller)
         logging.info('peak-calling finish')
         return peak_files
 
@@ -248,11 +167,31 @@ class Rtstop:
         return tmp
 
 
+class Report:
+    """
+    create report of goldclip
+
+    args : project_path, the directory of goldclip output
+    args : project_name, the smp_name of the project, -n in Alignment
+    args : g, the reference genome of the project
+    """
+    def __init__(self, **kwargs):
+        self.kwargs = kwargs
+
+    def run(self):
+        args = self.kwargs
+        Goldclip_output(
+            project_path=args['project_path'],
+            project_name=args['project_name'],
+            genome=args['g'],
+            threads=8).get_all_figures()
+
+
 class Run_all:
     """
     call RT-stops from BAM files
     """
-    def __init__(self, *args, **kwargs):
+    def __init__(self,  **kwargs):
         self.kwargs = kwargs
 
 
@@ -286,20 +225,5 @@ class Run_all:
 
         logging.info('GoldCLIP finish')
 
-        return tmp
-
-
-class Report:
-    """
-    create report of goldclip
-    """
-    def __init__(self, *args, **kwargs):
-        self.kwargs = kwargs
-
-    def run(self):
-        path_out = self.kwargs['path']
-        smp_name = self.kwargs['name']
-        genome = self.kwargs['genome']
-        tmp = goldclip_report(path_out, smp_name, genome)
         return tmp
 

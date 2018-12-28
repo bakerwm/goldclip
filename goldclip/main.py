@@ -29,8 +29,6 @@ subparsers.required = True
 ## options for sub-programs
 subparser_demx = subparsers.add_parser('run', help='running goldclip pipeline from fastq to peaks.')
 subparser_demx = add_run_args(subparser_demx)
-# subparser_demx = subparsers.add_parser('demx', help='demultiplexing illumina reads.')
-# subparser_demx = add_demx_args(subparser_demx)
 subparser_trim = subparsers.add_parser('trim', help='trimming reads.')
 subparser_trim = add_trim_args(subparser_trim)
 subparser_align = subparsers.add_parser('align', help='alignment reads to reference genome.')
@@ -45,7 +43,7 @@ subparser_report = add_report_args(subparser_report)
 
 class Goldclip:
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, **kwargs):
         self.kwargs = kwargs
 
     def start_process(self):

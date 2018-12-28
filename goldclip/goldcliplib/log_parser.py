@@ -670,7 +670,7 @@ def map_wrapper(path, smp_name='demo'):
 
 ##--------------------##
 ## figure 3
-def bam_corr(fns, path_out, window=10000, multi_cores=8):
+def bam_corr(fns, path_out, window=10000, threads=8):
     """
     calculate the Pearson correlation between BAM files
     use window size: 500, 1k, 10k, 100k,
@@ -687,7 +687,7 @@ def bam_corr(fns, path_out, window=10000, multi_cores=8):
     cor_png = os.path.join(path_out, 'cor_scatter.png')
     cor_tab = os.path.join(path_out, 'cor_matrix.tab')
     c1 = 'multiBamSummary bins --bamfiles {} -out {} --outRawCounts {} \
-        -p {} --binSize {}'.format(para_bam, out_npz, out_tab, multi_cores,
+        -p {} --binSize {}'.format(para_bam, out_npz, out_tab, threads,
         window)
     c2 = 'plotCorrelation -in {} --corMethod pearson --skipZeros \
         --removeOutliers -T {} --whatToPlot scatterplot -o {} \
@@ -709,7 +709,7 @@ def bam_corr(fns, path_out, window=10000, multi_cores=8):
     #     --binSize window
     #     --smartLabels
     #     --binSize window
-    #     -p multi_cores
+    #     -p threads
         
 
     # plotCorrelation 

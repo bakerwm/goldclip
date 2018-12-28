@@ -7,29 +7,25 @@ Run goldclip pipeline
 4. call RTStops
 5. report
 
-functions
 """
 
 __author__ = "Ming Wang"
 __email__ = "wangm08@hotmail.com"
-__date__ = "2018-03-21"
+__date__ = "2018-12-25"
 __version__ = "0.1"
 
 
 import os
 import sys
-from goldclip.goldcliplib.trim import *
-from goldclip.goldcliplib.map import *
-from goldclip.goldcliplib.peak import *
+from goldclip.helper import BAM
+from goldclip.goldcliplib.trim import Trimmer
+from goldclip.goldcliplib.alignment import Alignment
+from goldclip.goldcliplib.peak import call_peak
 from goldclip.goldcliplib.rtstop import *
 from goldclip.goldcliplib.report import *
 
-def run_goldclip(fq_files, path_out, genome, smp_name, spikein=None,
-                 is_trimmed=False, ad3=None, read12=1, len_min=15, qual_pct=80,
-                 qual_min=20, err_rate=0.1, overlap=1, rm_untrim=False, 
-                 rm_dup=False, cut_before_trim=0, cut_after_trim=0, 
-                 aligner='bowtie', threshold=1, intersect=1, path_data=None, 
-                 threads=1, overwrite=False):
+
+def run_goldclip(fqs, path_out, genome, smp_name, lib_type=1, **kwargs):
     """
     run goldclip pipeline for all
     """
@@ -37,32 +33,23 @@ def run_goldclip(fq_files, path_out, genome, smp_name, spikein=None,
     assert isinstance(genome, str)
     assert isinstance(smp_name, str)
 
+    args = Argument(lib_type).all()
+    args = {**args, **kwargs} # update parameters
+
     # trim
     path_trim = os.path.join(path_out, 'input_reads')
     if is_trimmed:
         clean_fq_files = fq_files
     else:
-        clean_fq_files = trim(fq_files, 
-                              path_trim, 
-                              adapter3='AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC', #ad3,
-                              len_min=len_min, 
-                              qual_min=qual_min, 
-                              err_rate=err_rate, 
-                              multi_cores=threads,
-                              rm_untrim=rm_untrim, 
-                              overlap=overlap, 
-                              read12=read12, 
-                              overwrite=overwrite, 
-                              rm_dup=rm_dup, 
-                              cut_before_trim=cut_before_trim,
-                              cut_after_trim=cut_after_trim)
+        clean_fq_files = trim(fq_files, path_trim, **args)
 
     # # map
     # path_map = os.path.join(path_out, 'genome_mapping')
-    # map_bam_files, map_bed_files = map(clean_fq_files, smp_name, path_map, 
-    #                                    genome, spikein, multi_cores=threads, 
-    #                                    aligner=aligner, path_data=path_data, 
-    #                                    overwrite=overwrite)
+
+    # map_bam_files = Alignment(clean_fq_files,
+    #         path_map,
+    #         smp_name=smp_name,
+    #         genome=genome, **args).run()
 
     # # bigWig
     # path_bw = os.path.join(path_out, 'bigWig')
@@ -84,8 +71,8 @@ def run_goldclip(fq_files, path_out, genome, smp_name, spikein=None,
     #                            threshold=threshold, intersect=intersect,
     #                            overwrite=overwrite)
 
-    # report
-    tmp = Goldclip_output(path_out, smp_name, genome).get_all_figures()
+    # # report
+    # tmp = Goldclip_output(path_out, smp_name, genome).get_all_figures()
     # goldclip_report(path_out, smp_name, genome)
 
 

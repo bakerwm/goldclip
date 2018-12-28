@@ -121,6 +121,7 @@ class Trimmer(object):
             fq_log = os.path.join(self.path_out, '%s.cutadapt.log' % fq_prefix)
             fq_untrim = os.path.join(self.path_out, '%s.untrim.fastq' % fq_prefix)
             return [fq_prefix, fq_clean, fq_log, fq_untrim]
+
         # PE mode
         elif os.path.exists(self.fq2):
             fq1_name = file_prefix(self.fq1)[0]
@@ -487,6 +488,7 @@ class Trimmer(object):
 
     def run(self):
         """Run trimming"""
+        ## SE mode
         if self.fq2 is None:
             fq_clean = self.trim_se()
             if self.cut_after_trim == '0' and self.rm_dup:
@@ -497,7 +499,6 @@ class Trimmer(object):
                 fq_clean = fq_tmp2
             elif not self.cut_after_trim == '0':
                 fq_tmp1 = self.trim_ends(fq_clean, fq_clean)
-                # os.remove(fq_clean)
                 fq_clean = fq_tmp1
             elif self.rm_dup:
                 fq_tmp1 = self.rm_duplicate(fq_clean)
@@ -514,13 +515,34 @@ class Trimmer(object):
                     fq1 = self.trim_ends2(fq_clean)
                     # os.remove(fq_clean)
                     fq_clean = fq1
-            return fq_clean
+            # return fq_clean
+            fq_output = fq_clean
+            fq_return = fq_clean
+        ## PE mode
         elif os.path.exists(self.fq2):
             [fq1_clean, fq2_clean] = self.trim_pe()
             if not self.cut_after_trim == '0':
                 fq_tmp1 = self.trim_ends(fq1_clean, fq1_clean)
                 fq_tmp2 = self.trim_ends(fq2_clean, fq2_clean)
-            return [fq1_clean, fq2_clean]
+            # return [fq1_clean, fq2_clean]
+            fq_output = fq1_clean
+            fq_return = [fq1_clean, fq2_clean]
+        else:
+            pass
+
+        # save clean read count
+        fq_count = int(file_row_counter(fq_output) / 4)
+        fq_prefix = file_prefix(self.fq1)[0]
+        fq_count_txt = os.path.join(self.path_out, fq_prefix + '.clean_reads.txt')
+        if os.path.exists(fq_count_txt) and self.overwrite is False:
+            pass
+        else:
+            with open(fq_count_txt, "wt") as fo:
+                fo.write(str(fq_count) + '\n')
+
+        return fq_return
+
+
 
 
 ## EOF

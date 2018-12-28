@@ -85,35 +85,35 @@ def run_pyicoclip(genome, bam_in, path_out, output):
 
 
 
-def call_peak(genome, bam_ins, path_out, tool='clipper'):
+def call_peak(genome, bam_ins, path_out, peak_caller='clipper'):
     """
     call peaks using clipper, pyicoclip
     multiple BAM files supported
     """
-    logging.info('calling peaks - %s' % tool)
+    logging.info('calling peaks - %s' % peak_caller)
     path_out = path_out if path_out else os.getcwd()
     assert is_path(path_out)
-    if tool == 'clipper':
+    if peak_caller == 'clipper':
         if not genome in ['hg19', 'mm9']:
             # raise ValueError('CLIPper not support: %s' % genome)
             logging.error('CLIPper not support: %s' % genome)
             return None
-    if tool == 'pyicoclip':
+    if peak_caller == 'pyicoclip':
         if not genome in ['dm3', 'mm9', 'mm10', 'hg19', 'hg38']:
             # raise ValueError('Pyicoclip not support: %s' % genome)
             logging.error('Pyicoclip not support: %s' % genome)
             return None
     output = mp.Queue() # run in parallel
-    if tool == 'clipper':
+    if peak_caller == 'clipper':
         processes = [mp.Process(target = run_clipper, 
                                 args = (genome, b, path_out, output))
                     for b in bam_ins]
-    elif tool == 'pyicoclip':
+    elif peak_caller == 'pyicoclip':
         processes = [mp.Process(target = run_pyicoclip, 
                                 args = (genome, b, path_out, output)) 
                     for b in bam_ins]
     else:
-        sys.exit(tool + ' : unknown tool, [clipper|pyicoclip]')        
+        sys.exit(peak_caller + ' : unknown peak_caller, [clipper|pyicoclip]')        
     # Run processes
     for p in processes:
         p.start()
