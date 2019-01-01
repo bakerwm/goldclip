@@ -13,6 +13,77 @@ pre-defined arguments for specific pipeline
 """
 
 
+default_arguments = {
+    'trim': {
+        'adapter3' : 'AGATCGGAAGAGCACACGTCTGAACTCCAGTCAC',
+        'adapter5' : None,
+        'len_min' : 15,
+        'read12' : 1,
+        'qual_min' : 20,
+        'err_rate' : 0.1,
+        'AD3' : 'AGATCGGAAGAGCGTCGTGTAGGGAAAGAGTGT',
+        'AD5' : None,
+        'overlap' : 3,
+        'threads': 8,
+        'overwrite' : False,
+        'rm_untrim' : False,
+        'keep_name' : True,
+        'adapter_sliding' : False,
+        'trim_times': 1,
+        'double_trim': False,
+        'rm_dup' : False,
+        'cut_before_trim' : 0,
+        'cut_after_trim': 0,
+        'trim_to_length' : 0
+    },
+
+    'align': {
+        'spikein' : None,
+        'index_ext' : None,
+        'threads': 8,
+        'unique_only' : False,
+        'n_map' : 0,
+        'aligner' : 'STAR',
+        'align_to_rRNA' : True,
+        'repeat_masked_genome' : False,
+        'merge_rep' : True,
+        'overwrite' : False
+    },
+
+    'peak': {
+        'peak_caller' : 'pyicoclip',
+        'threads' : 8,
+        'overwrite' : False,
+    }, 
+
+    'rtstop': {
+        'threshold' : 1, # threshold
+        'intersect' : 0, # intersect, 0, 1
+        'overwrite' : False
+    },
+
+    'report': {
+        'group': 'homer',
+        'window': 10000,
+        'threads': 8
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class Argument(object):
     """Pre-defined arguments for goldclip analysis

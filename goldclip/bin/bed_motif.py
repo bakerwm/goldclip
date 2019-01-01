@@ -56,7 +56,7 @@ def bed_to_fa(bed, genome):
     """
     assert isinstance(bed, str)
     assert os.path.exists(bed)
-    g_fa = Genome_info(genome).get_fa()
+    g_fa = Genome(genome).get_fa()
     fa_out = tempfile.mkstemp(suffix = '.fa')[1]
     p = pybedtools.BedTool(bed).sequence(fi=g_fa, fo=fa_out, s=True, name=True)
     return fa_out
@@ -77,21 +77,21 @@ def get_random_peak(bed, genome, path_out=None, num=1):
     """generate random peaks using random_peak"""
     assert isinstance(bed, str)
     assert os.path.exists(bed)
-    g = Genome_info(genome)
+    gene_bed = Genome(genome).gene_bed()
+    gene_rmsk = Genome(genome).gene_bed(rmsk=True)
     if path_out is None:
         path_out = tempfile.TemporaryDirectory()
     assert is_path(path_out)
     c = 'random_peak -i {} -g {} -m {} -o {} -f {} -n {}'.format(bed, 
-        g.gene_bed(), g.gene_rmsk(), path_out, 'random', num)
-    p = subprocess.run(shlex.split(c), stdout = subprocess.PIPE)
+        gene_bed, gene_rmsk, path_out, 'random', num)
+    p = subprocess.run(shlex.split(c), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     random_bed = os.path.join(path_out, 'random1')
     return random_bed
 
 
 def get_random_peak2(bed, genome, path_out = None, num = 1):
     """get random peaks using bedtools shuffle"""
-    g = Genome_info(genome)
-    gene_bed = g.gene_bed()
+    gene_bed = Genome(genome).gene_bed()
     random_bed = os.path.join(path_out, 'random.bed')
     b = pybedtools.BedTool(bed).shuffle(genome=genome, incl=gene_bed, 
         chrom=True, seed=1, noOverlapping=True).saveas(random_bed)

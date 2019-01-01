@@ -11,6 +11,7 @@ import datetime
 import json
 import glob
 import argparse
+import pickle
 import shlex
 import subprocess
 import pathlib
@@ -23,7 +24,7 @@ import pybedtools
 import binascii
 from goldclip.bin.bed_fixer import *
 from goldclip.configure import goldclip_home
-from goldclip.helper import *
+
 
 logging.basicConfig(format = '[%(asctime)s] %(message)s', 
                     datefmt = '%Y-%m-%d %H:%M:%S', 
@@ -56,6 +57,42 @@ def which(program):
 
     return None
 
+
+def args_checker(d, x, update=False):
+    """Check if dict and x are consitent"""
+    assert isinstance(d, dict)
+    flag = None
+    if os.path.exists(x):
+        # read file to dict
+        with open(x, 'rb') as fi:
+            d_checker = pickle.load(fi)
+        if d == d_checker:
+            flag = True
+        else:
+            if update:
+                with open(x, 'wb') as fo:
+                    pickle.dump(d, fo, protocol=pickle.HIGHEST_PROTOCOL)
+    elif isinstance(x, str):
+        # save dict to new file
+        with open(x, 'wb') as fo:
+                    pickle.dump(d, fo, protocol=pickle.HIGHEST_PROTOCOL)
+    else:
+        logging.error('illegal x= argument: %s' % x)
+    return flag
+
+
+def args_logger(d, x, overwrite=False):
+    """Format dict, save to file
+        key: value
+    """
+    assert isinstance(d, dict)
+    n = ['%20s : %-40s' % (k, d[k]) for k in list(d.keys())]
+    if os.path.exists(x) and overwrite is False:
+        return True
+    else:
+        with open(x, 'wt') as fo:
+            fo.write('\n'.join(n) + '\n')
+        return '\n'.join(n)
 
 ##-------------------------------------------##
 ## formatter

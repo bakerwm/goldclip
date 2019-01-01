@@ -21,11 +21,6 @@ import shlex
 import subprocess
 import logging
 import pandas as pd
-# import pysam
-# import pybedtools
-# from operator import is_not
-# from functools import partial
-# import multiprocessing as mp
 from goldclip.bin.bed_annotation import *
 from goldclip.helper import *
 
@@ -640,33 +635,6 @@ def map_wrapper(path, smp_name='demo'):
     df.insert(0, smp_name, df.sum(axis=1))
     return df
 
-##--------------------##
-## figure 2
-# def anno_run(bed, genome, group, output, path_data=None):
-#     """
-#     annotate bed files
-#     output : Queue (df)
-#     """
-#     df = bed_annotator(bed, genome, group, path_data)
-#     output.put(df)
-
-
-# def bed_anno(bed_files, genome, group, path_data=None):
-#     """
-#     intput: genome_mapping/ 
-#     return the genome mapped bed files
-#     """
-#     #call peaks in parallel
-#     output = mp.Queue()
-#     processes = [mp.Process(target = anno_run, 
-#         args = (b, genome, group, output)) for b in bed_files]
-#     for p in processes:
-#         p.start() #start process
-#     for p in processes:
-#         p.join() #exit completed process
-#     results = [output.get() for p in processes]
-#     df = pd.concat(results, axis = 1)
-#     return df
 
 ##--------------------##
 ## figure 3
@@ -758,6 +726,34 @@ def bed_conservation(bed_in, bed_out, extend = 0, genome = 'hg19'):
     cmd = shlex.split(c)
     p = subprocess.run(cmd)
 
+
+##--------------------##
+## figure 2
+# def anno_run(bed, genome, group, output, path_data=None):
+#     """
+#     annotate bed files
+#     output : Queue (df)
+#     """
+#     df = bed_annotator(bed, genome, group, path_data)
+#     output.put(df)
+
+
+# def bed_anno(bed_files, genome, group, path_data=None):
+#     """
+#     intput: genome_mapping/ 
+#     return the genome mapped bed files
+#     """
+#     #call peaks in parallel
+#     output = mp.Queue()
+#     processes = [mp.Process(target = anno_run, 
+#         args = (b, genome, group, output)) for b in bed_files]
+#     for p in processes:
+#         p.start() #start process
+#     for p in processes:
+#         p.join() #exit completed process
+#     results = [output.get() for p in processes]
+#     df = pd.concat(results, axis = 1)
+#     return df
 
 # ## functions
 # def json_reader(file):

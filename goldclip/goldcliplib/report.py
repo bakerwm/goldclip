@@ -44,17 +44,17 @@ import re
 import random
 import logging
 import pandas as pd
-import numpy as np
+# import numpy as np
 from goldclip.helper import *
 from goldclip.bin.bed_fixer import Bed_parser
-from goldclip.bin.bed_motif import *
-from goldclip.bin.bed_annotation import *
+from goldclip.bin.bed_motif import bed2motif
+from goldclip.bin.bed_annotation import bed_annotator
 from goldclip.goldcliplib.log_parser import *
 from goldclip.goldcliplib.log_parser import Json_file
 
 
 
-class Goldclip_output(object):
+class Goldclip_report(object):
     """Record the output of Goldclip output
 
     directory structure of goldclip output
@@ -98,32 +98,35 @@ class Goldclip_output(object):
         """
         path_trim = self.project_subpath['trim_path']
         dfx = [] # list of pd.DataFrame
-        with os.scandir(path_trim) as it:
-            for entry in it:
-                if not entry.name.endswith('.cutadapt.json'):
-                    continue
-                name = re.sub(r'.cutadapt.json', '', entry.name)
-                fn = os.path.join(path_trim, entry.name)
-                dd = Json_file(fn).json_reader()
-                # clean
-                fn_nodup = os.path.join(path_trim, name + '.clean_reads.txt')
-                with open(fn_nodup) as fi:
-                    dd['nodup'] = next(fi).strip()
-                dd['too_short'] = int(dd['total']) - int(dd['clean'])
-                dd['dup'] = int(dd['clean']) - int(dd['nodup'])
-                dx = pd.DataFrame({'group': ['raw_count', 
-                                             'too_short', 
-                                             'PCR_dup', 
-                                             'no_dup'],
-                                    name: [dd['total'], 
-                                           dd['too_short'], 
-                                           dd['dup'], 
-                                           dd['nodup']]})
-                dx.set_index('group', inplace=True)
-                dfx.append(dx)
-        df = pd.concat(dfx, axis=1)
-        df = df.apply(pd.to_numeric)
-        df.insert(0, self.project_name, df.sum(axis=1))
+        if os.path.exists(path_trim):
+            with os.scandir(path_trim) as it:
+                for entry in it:
+                    if not entry.name.endswith('.cutadapt.json'):
+                        continue
+                    name = re.sub(r'.cutadapt.json', '', entry.name)
+                    fn = os.path.join(path_trim, entry.name)
+                    dd = Json_file(fn).json_reader()
+                    # clean
+                    fn_nodup = os.path.join(path_trim, name + '.clean_reads.txt')
+                    with open(fn_nodup) as fi:
+                        dd['nodup'] = next(fi).strip()
+                    dd['too_short'] = int(dd['total']) - int(dd['clean'])
+                    dd['dup'] = int(dd['clean']) - int(dd['nodup'])
+                    dx = pd.DataFrame({'group': ['raw_count', 
+                                                 'too_short', 
+                                                 'PCR_dup', 
+                                                 'no_dup'],
+                                        name: [dd['total'], 
+                                               dd['too_short'], 
+                                               dd['dup'], 
+                                               dd['nodup']]})
+                    dx.set_index('group', inplace=True)
+                    dfx.append(dx)
+        df = pd.DataFrame()
+        if len(dfx) > 0:
+            df = pd.concat(dfx, axis=1)
+            df = df.apply(pd.to_numeric)
+            df.insert(0, self.project_name, df.sum(axis=1))
         return df
 
 
@@ -177,7 +180,7 @@ class Goldclip_output(object):
 
 
     def get_peak_file(self, rep_only=False, merge_only=False):
-        path_map = self.project_subpath['peak_path']
+        path_peak = self.project_subpath['peak_path']
         peak_files = []
         with os.scandir(path_peak) as tools:
             for tool in tools:
@@ -218,10 +221,8 @@ class Goldclip_output(object):
     ##---------------------------------##
     ## statistics for figures
     ##---------------------------------##
-    def fig1_trim_map(self):
-        """
-        trim, PCR_dup
-        mapped reads
+    def figure1_trim_map(self):
+        """Trim, PCR_dup, mapped reads
         """
         logging.info('figure1 reads mapping')
         path_report = self.project_subpath['report_path']
@@ -236,7 +237,7 @@ class Goldclip_output(object):
         return df
 
 
-    def fig2_read_anno(self, genome, group='homer'):
+    def figure2_read_anno(self, genome, group='homer'):
         """Return categories of mapped reads
         # function
         df = bed_annotator(args.i.name, args.g, args.t, path_data)
@@ -252,7 +253,6 @@ class Goldclip_output(object):
             logging.error('failed, bed files not found: %s' % path)
             return None
         # annotate files
-        # dfx = [bed_annotator(bed, genome, group) for bed in bed_files]
         dfx = []
         for bed in bed_files:
             df_anno = bed_annotator(bed, genome, group).drop(columns=['sample'])
@@ -262,7 +262,7 @@ class Goldclip_output(object):
         return(df)
 
 
-    def fig3_read_cor(self):
+    def figure3_read_cor(self):
         """Return the correlation between replicates, window with fixed width
         using deeptools
         """
@@ -279,7 +279,7 @@ class Goldclip_output(object):
         return df
 
 
-    def fig4_rtstop_cor(self):
+    def figure4_rtstop_cor(self):
         """Return the correlation between replicates, using rtstops counts
         using pandas
         """
@@ -302,18 +302,16 @@ class Goldclip_output(object):
         return dfx_cor
 
 
-    def fig5_peak_count(self):
+    def figure5_peak_count(self):
         """
         Number of peaks for each sample
         """
-        path = self.project_path
-        project_name = self.project_name
         logging.info('figure5 peak number')
-        figure5_path = os.path.join(path, 'results', 'peak_number')
+        path_report = self.project_subpath['report_path']
+        project_name = self.project_name
+        figure5_path = os.path.join(path_report, 'peak_number')
         figure5_txt = os.path.join(figure5_path, 'peak_number.txt')
-        assert os.path.exists(path)
         assert is_path(figure5_path)
-        assert isinstance(project_name, str)
         peak_files = self.get_peak_file()
         df = pd.DataFrame(columns = ['tool', 'id', 'count'])
         for p in peak_files:
@@ -327,81 +325,74 @@ class Goldclip_output(object):
         return df
 
 
-    def fig6_peak_length(self):
+    def figure6_peak_length(self):
         """peak length"""
-        path = self.project_path
-        project_name = self.project_name
         logging.info('figure6 peak length')
-        figure6_path = os.path.join(path, 'results', 'peak_length')
+        path_report = self.project_subpath['report_path']
+        project_name = self.project_name
+        figure6_path = os.path.join(path_report, 'peak_length')
         figure6_txt = os.path.join(figure6_path, 'peak_length.txt')
-        assert os.path.exists(path)
         assert is_path(figure6_path)
-        assert isinstance(project_name, str)
         peak_files = self.get_peak_file()
         df = pd.DataFrame(columns = ['length', 'tool', 'id', 'count'])
         for p in peak_files:
-            sep = p.split('/') # only for Linux path
-            tool, sample = sep[-3:-1]
+            tmp1, sample = os.path.split(p) # basename
+            tmp2 = os.path.split(tmp1)[0] # tmp
+            tool = os.path.split(tmp2)[1] # pyicoclip/clipper
             dx = Bed_parser(p).bed
-            dx2 = pd.DataFrame({'length': dx.end - dx.start,
-                                'id': sample})
-            s1 = dx2.groupby('length')['id'].nunique()
-            dx3 = pd.DataFrame({'tool': tool, 
-                                'id': sample,
-                                'count': s1})
-            dx3 = dx3.reset_index()
-            dx3 = dx3.rename({'index': 'length'})
-            df = df.append(dx3, ignore_index=True, sort=False)
+            dx['length'] = dx['end'] - dx['start']
+            dx2 = dx['length'].value_counts().to_frame().reset_index()
+            dx2['id'] = sample
+            dx2['tool'] = tool
+            dx2 = dx2.rename(index=str, columns={'index': 'length', 'length': 'count'})
+            df = df.append(dx2, sort=False)
         df.to_csv(figure6_txt, '\t', header=True, index=False)
         return df
 
 
-    def fig7_peak_anno(self, genome, group='homer'):
+    def figure7_peak_anno(self, genome, group='homer'):
         """peak annotation"""
-        path = self.project_path
-        project_name = self.project_name
         logging.info('figure7 peak annotation')
-        figure7_path = os.path.join(path, 'results', 'peak_annotation')
+        path_report = self.project_subpath['report_path']
+        project_name = self.project_name
+        figure7_path = os.path.join(path_report, 'peak_annotation')
         figure7_txt = os.path.join(figure7_path, 'peak_annotation.txt')
-        assert os.path.exists(path)
         assert is_path(figure7_path)
-        assert isinstance(project_name, str)
-        # peak_files = glob.glob(os.path.join(path, 'peaks', '*', '*', "*.fixed.bed"))
         peak_files = self.get_peak_file()
         df = pd.DataFrame(columns = ['type', 'count', 'id', 'tool'])
         for p in peak_files:
-            sep = p.split('/') # only for Linux path
-            tool, sample = sep[-3:-1]
+            tmp1, sample = os.path.split(p) # basename
+            tmp2 = os.path.split(tmp1)[0] # tmp
+            tool = os.path.split(tmp2)[1] # pyicoclip/clipper
             dx = bed_annotator(p, genome, group) # index, id
             dx = dx.reset_index()
-            dx.columns = ['type', 'count']
-            dx['id'] = sample
+            dx.columns = ['type', 'count', 'id']
             dx['tool'] = tool
             df = df.append(dx, ignore_index=True, sort=False)
         df.to_csv(figure7_txt, '\t', header=True, index=False)
         return df
 
 
-    def fig8_peak_motif(self, genome):
+    def figure8_peak_motif(self, genome):
         """peak motif analysis, de novo analysis"""
-        path = self.project_path
-        project_name = self.nam
         logging.info('figure8 motif analysis')
-        # peak_files = glob.glob(os.path.join(path, 'peaks', '*', '*', '*.fixed.bed'))
+        path_report = self.project_subpath['report_path']
+        project_name = self.project_name
+        figure8_path = os.path.join(path_report, 'peak_motif')
+        assert is_path(figure8_path)
         peak_files = self.get_peak_file()
-        path_peak_motif = os.path.join(path, 'results', 'peak_motif')
-        if not os.path.exists(path_peak_motif):
-            os.makedirs(path_peak_motif)
-        for b in peak_files:
-            t = b.split(r'/')
-            tool, smp_id, project_name = t[-3:]
-            b_prefix = re.sub('.fixed.bed', '', project_name)
-            logging.info('motif - ' + tool + ' : ' + smp_id)
-            b_path = os.path.join(path_peak_motif, tool, smp_id)
-            bed2motif(b, genome, b_path, '4,5,6,7,8')
+        for p in peak_files:
+            tmp1, project_name = os.path.split(p) # basename
+            tmp2, smp_id = os.path.split(tmp1) # tmp
+            tool = os.path.split(tmp2)[1] # pyicoclip/clipper
+            project_name = re.sub('.fixed.bed', '', project_name)
+            logging.info('find motifs: %s - %s' % (tool, smp_id))
+            peak_path = os.path.join(figure8_path, tool, smp_id)
+            assert is_path(peak_path)
+            bed2motif(p, genome, peak_path, '4,5,6,7,8')
 
 
-    def fig9_peak_conservation(self, genome):
+    def figure9_peak_conservation(self, genome):
         """
         conservation of peaks
         phyloP1000
@@ -435,12 +426,12 @@ class Goldclip_output(object):
         genome = self.genome
         window = self.window
         threads = self.threads
-        # df = self.fig1_trim_map()
-        # df = self.fig2_read_anno(genome=genome)
-        # df = self.fig3_read_cor()
-        df = self.fig4_rtstop_cor()
-        # df = self.fig5_peak_count()
-        # df = self.fig6_peak_length()
-        # df = self.fig7_peak_anno(genome=genome, group=group)
-        # # df = self.fig8_motif_analysis(genome=genome)
-        # df = self.fig9_peak_conservation(genome=genome)
+        df = self.figure1_trim_map()
+        df = self.figure2_read_anno(genome=genome)
+        df = self.figure3_read_cor()
+        df = self.figure4_rtstop_cor()
+        df = self.figure5_peak_count()
+        df = self.figure6_peak_length()
+        df = self.figure7_peak_anno(genome=genome)
+        df = self.figure8_peak_motif(genome=genome)
+        # df = self.figure9_peak_conservation(genome=genome)
