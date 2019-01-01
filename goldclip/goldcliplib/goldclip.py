@@ -6,185 +6,72 @@ __author__ = 'Ming Wang <wangm08@hotmail.com>'
 __copyright__ = '2018 by Ming Wang <wangm08@hotmail.com>'
 __license__ = 'MIT'
 __email__ = 'wangm08@hotmail.com'
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 
-
-from goldclip.goldcliplib.demx import *
-from goldclip.goldcliplib.trim import *
-from goldclip.goldcliplib.aligner import *
-from goldclip.goldcliplib.peak import *
-from goldclip.goldcliplib.rtstop import *
-from goldclip.goldcliplib.run import *
-from goldclip.goldcliplib.report import *
-
-
-class Demx:
-
-    """
-    processing GoldCLIP illumina datasets
-    only one of the PE reads
-    ## type1: goldclip_version_1
-    read1: {NNN} - {bc} - {NN} - <insert>
-
-    ## type2: goldclip_version_2
-    read1: {N10} - <insert> - A{barcode}
-    read2: {barcode}A - <insert> - {N10}
-
-    ## type3: eCLIP
-    read1: {barcode} - <insert> - {N10}
-    read2: {N10} - <insert> - {bracode}
-
-    """
-
-    def __init__(self, *args, **kwargs):
-        self.kwargs = kwargs
-
-
-    def run(self):
-        """run demx"""
-        r1 = self.kwargs['fq1']
-        r2 = self.kwargs['fq2']
-        barcode = self.kwargs['bc_file']
-        bc_in_read12 = self.kwargs['bc_in_read12']
-        path_out = self.kwargs['out']
-        n_left = self.kwargs['n_left']
-        n_right = self.kwargs['n_right']
-        is_bioawk = self.kwargs['bioawk']
-        bc = self.kwargs['bc_only']
-        p7 = self.kwargs['p7_only']
-        p7_and_bc = self.kwargs['p7_and_bc']
-        mm = self.kwargs['n_mismatch']
-        cut = self.kwargs['cut']
-        # demx p7, then barcode
-        read1 = r1.name
-        barcode_file = barcode.name
-        assert is_path(path_out)
-        if p7_and_bc: # demx both p7 and barcode
-            if r2:
-                logging.info('demx P7 and barcode, PE reads')
-                read2 = r2.name
-                tmp = p7_bc_demx_pe(read1, read2, barcode_file, path_out,
-                                    n_left, n_right, 
-                                    bc_in_read12=bc_in_read12,cut=cut, mm=mm)
-            else:
-                logging.info('demx P7 and barcode, SE reads')
-                tmp = p7_bc_demx_se(read1, barcode_file, path_out, n_left, n_right,
-                                    cut=cut, mm=mm)
-        elif p7: # require demx p7, in fastq-comment-field
-            if r2:
-                logging.info('demx P7, PE reads')
-                read2 = r2.name
-                tmp = p7_demx_pe(read1, read2, barcode_file, path_out, 
-                                 bc_in_read12=bc_in_read12, mm=mm)
-            else:
-                logging.info('demx P7, SE reads')
-                tmp = p7_demx_se(read1, barcode_file, path_out, mm)
-        else: # only barcode
-            if r2:
-                logging.info('demx barcode, PE reads')
-                read2 = r2.name
-                tmp = bc_demx_pe(read1, read2, barcode_file, path_out, n_left, 
-                                 n_right, bc_in_read12=bc_in_read12, cut=cut, 
-                                 mm=mm)
-            else:
-                if is_bioawk:
-                    logging.info('demx barcode, SE reads - bioawk')
-                    tmp = demx_se_bioawk(read1, barcode_file, path_out, n_left,
-                                         n_right)
-                else:
-                    logging.info('demx barcode, SE reads')
-                    tmp = bc_demx_se(read1, barcode_file, path_out, n_left,
-                                     n_right, cut=cut, mm=mm)
-        logging.info('demx finish!')
-
+import os
+import sys
+from goldclip.helper import BAM, logging
+from goldclip.goldcliplib.arguments import args_init
+from goldclip.goldcliplib.trim import Trimmer
+from goldclip.goldcliplib.alignment import Alignment
+from goldclip.goldcliplib.peak import call_peak
+from goldclip.goldcliplib.rtstop import call_rtstop
+from goldclip.goldcliplib.report import Goldclip_report
 
 
 class Trim:
-
-    def __init__(self, *args, **kwargs):
-        self.kwargs = kwargs
+    def __init__(self, **kwargs):
+        self.kwargs = args_init(kwargs)
 
     def run(self):
-        logging.info('trimming files')
-        fq_files = [f.name for f in self.kwargs['i']]
-        ad3 = self.kwargs['a']
-        path_out = self.kwargs['o']
-        len_min = self.kwargs['m']
-        qual_pct = self.kwargs['p']
-        qual_min = self.kwargs['q']
-        overlap = self.kwargs['O']
-        err_rate = self.kwargs['e']
-        threads = self.kwargs['threads']
-        read12 = self.kwargs['read12']
-        adapter_sliding = self.kwargs['adapter_sliding']
-        double_trim = self.kwargs['double_trim']
-        rm_untrim = self.kwargs['rm_untrim'],
-        rm_dup = self.kwargs['rm_dup']
-        cut_before_trim = self.kwargs['cut_before_trim']
-        cut_after_trim = self.kwargs['cut_after_trim']
-        overwrite = self.kwargs['overwrite']
-        rm_untrim = rm_untrim[0] # is tuple, not bool? !!!! why?
-        tmp = trim(fq_files, adapter3=ad3, path_out=path_out, len_min=len_min,
-                   double_trim=double_trim, qual_min=qual_min, 
-                   err_rate=err_rate, overlap=overlap, multi_cores=threads, 
-                   read12=read12, adapter_sliding=adapter_sliding, 
-                   rm_untrim=rm_untrim, rm_dup=rm_dup, 
-                   cut_before_trim=cut_before_trim, 
-                   cut_after_trim=cut_after_trim,
-                   overwrite=overwrite,)
-        logging.info('trimming finish!')
+        logging.info('trimming start')
+        args = self.kwargs
+        fq1_files = args.pop('fq1', None) # remove 'fq1' from args
 
+        ## SE mode
+        if args['fq2'] is None: 
+            for fq1 in fq1_files:
+                tmp = Trimmer(fq1=fq1, **args).run()
+        ## PE mode
+        ## !!!! goldclip only works on SE reads !!!! ##
+        else:
+            fq2_files = args.pop('fq2', None) # remove 'fq2' from args
+            for fq1, fq2 in zip(fq1_files, fq2_files):
+                tmp = Trimmer(fq1=fq1, fq2=fq2, **args).run()
+        logging.info('trimming finish!')
 
 
 class Align:
     """
     Mapping SE reads to reference genome
-    specify: fq, path_out, index, parameters, tools
+    specify: fq, path_out, index, parameters, 
     """
-
-    def __init__(self, *args, **kwargs):
-        self.kwargs = kwargs
+    def __init__(self, **kwargs):
+        self.kwargs = args_init(kwargs)
 
 
     def run(self):
-        logging.info('mapping files')
-        fqs = [f.name for f in self.kwargs['i']]
-        smp_name = self.kwargs['n']
-        path_out = self.kwargs['o']
-        genome = self.kwargs['g']
-        spikein = self.kwargs['k']
-        unique_only = self.kwargs['unique_only']
-        align_to_rRNA = self.kwargs['align_to_rRNA']
-        multi_cores = self.kwargs['threads']
-        aligner = self.kwargs['aligner']
-        path_data = self.kwargs['path_data']
-        overwrite = self.kwargs['overwrite']
-        tmp = align(fqs, smp_name, path_out, genome, spikein, 
-                    unique_only=unique_only, 
-                    align_to_rRNA=align_to_rRNA,
-                    multi_cores=multi_cores,
-                    aligner=aligner, 
-                    path_data=path_data, 
-                    overwrite=overwrite)
+        tmp, _ = Alignment(**self.kwargs).run() # genome_bam, extra_bam
         logging.info('mapping finish!')
         return tmp[0]
 
 
 class Peak:
+    """Call peaks using CLIPper, pyicoclip
     """
-    call peaks using CLIPper, pyicoclip
-    """
-    def __init__(self, *args, **kwargs):
-        self.kwargs = kwargs
+    def __init__(self, **kwargs):
+        self.kwargs = args_init(kwargs)
 
     def run(self):
+        args = self.kwargs
+
         logging.info('peak-calling start')
-        bam_files = [f.name for f in self.kwargs['i']]
-        genome = self.kwargs['g']
-        path_out = self.kwargs['o']
-        tool = self.kwargs['tool']
-        peak_files = call_peak(genome, bam_files, path_out, tool)
+        peak_files = call_peak(
+            genome=args['genome'], 
+            bam_ins=args['bam_files'],
+            path_out=args['path_out'], 
+            peak_caller=args['peak_caller'])
         logging.info('peak-calling finish')
         return peak_files
 
@@ -193,87 +80,33 @@ class Rtstop:
     """
     call RT-stops from BAM files
     """
-    def __init__(self, *args, **kwargs):
-        self.kwargs = kwargs
+    def __init__(self, **kwargs):
+        self.kwargs= args_init(kwargs)
 
     def run(self):
+        args = self.kwargs
+
         logging.info('RTStop-calling start')
-        bed_files = [f.name for f in self.kwargs['i']]
-        path_out = self.kwargs['o']
-        smp_name = self.kwargs['n']
-        threshold = self.kwargs['t']
-        intersect = self.kwargs['c']
-        overwrite = self.kwargs['f']
-        tmp = call_rtstop(bed_files, path_out, smp_name, threshold,
-                          intersect, overwrite)
+        bed_files = []
+        # convert bam to bed
+        for b in args['bed_files']:
+            if b.endswith('.bam'):
+                logging.info('convert BAM to BED: %s' % b)
+                bed = BAM(b).to_bed()
+                bed_files.append(bed)
+            elif b.endswith('.bed'):
+                bed_files.append(b)
+            else:
+                continue
+
+        tmp = call_rtstop(
+            bed_files=bed_files, 
+            path_out=args['path_out'],
+            smp_name=args['smp_name'],
+            threshold=args['threshold'],
+            intersect=args['intersect'],
+            overwrite=args['overlap'])
         logging.info('RTstop-calling finish')
-        return tmp
-
-
-
-class Run_all:
-    """
-    call RT-stops from BAM files
-    """
-    def __init__(self, *args, **kwargs):
-        self.kwargs = kwargs
-
-
-    def run(self):
-        logging.info('GoldCLIP start')
-
-        tmp = run_goldclip(
-            fq_files = [f.name for f in self.kwargs['i']],
-            path_out = self.kwargs['o'],
-            genome = self.kwargs['g'],
-            smp_name = self.kwargs['n'],
-            spikein = self.kwargs['k'],
-            is_trimmed = self.kwargs['trimmed'],
-            ad3 = self.kwargs['a'],
-            read12 = self.kwargs['read12'],
-            len_min = self.kwargs['m'],
-            qual_pct = self.kwargs['p'],
-            qual_min = self.kwargs['q'],
-            err_rate = self.kwargs['e'],
-            overlap = self.kwargs['O'],
-            rm_untrim = self.kwargs['rm_untrim'],
-            rm_dup = self.kwargs['rm_dup'],
-            cut_before_trim = self.kwargs['cut_before_trim'],
-            cut_after_trim = self.kwargs['cut_after_trim'],
-            aligner = self.kwargs['aligner'],
-            # unique_only = self.kwargs['unique_only'],
-            # align_to_rRNA = self.kwargs['align_to_rRNA'],
-            threshold = self.kwargs['t'],
-            intersect = self.kwargs['c'],
-            path_data = self.kwargs['path_data'],
-            threads = self.kwargs['threads'],
-            overwrite = self.kwargs['overwrite'])
-
-            # fq_files=fq_files, 
-            # path_out=path_out, 
-            # genome=genome, 
-            # smp_name=smp_name,
-            # spikein=spikein,
-            # is_trimmed=is_trimmed,
-            # ad3=ad3,
-            # read12=read12,
-            # len_min=len_min,
-            # qual_pct=qual_pct,
-            # qual_min=qual_min,
-            # err_rate=err_rate,
-            # overlap=overlap,
-            # rm_untrim=rm_untrim,
-            # rm_dup=rm_dup,
-            # cut_before_trim=cut_before_trim,
-            # cut_after_trim=cut_after_trim,
-            # aligner=aligner,
-            # threshold=threshold,
-            # intersect=intersect,
-            # path_data=path_data,
-            # threads=threads,
-            # overwrite=overwrite)
-
-        logging.info('GoldCLIP finish')
 
         return tmp
 
@@ -281,14 +114,97 @@ class Run_all:
 class Report:
     """
     create report of goldclip
+
+    args : project_path, the directory of goldclip output
+    args : project_name, the smp_name of the project, -n in Alignment
+    args : g, the reference genome of the project
     """
-    def __init__(self, *args, **kwargs):
-        self.kwargs = kwargs
+    def __init__(self, **kwargs):
+        self.kwargs = args_init(kwargs)
 
     def run(self):
-        path_out = self.kwargs['path']
-        smp_name = self.kwargs['name']
-        genome = self.kwargs['genome']
-        tmp = goldclip_report(path_out, smp_name, genome)
-        return tmp
+        args = self.kwargs
+        Goldclip_report(**args).get_all_figures()
+
+
+class Goldclip_all_in_one(object):
+    """Run goldclip pipeline in one-step
+    01.trimming
+    02.genome_mapping
+    03.call_peaks
+    04.call_rtstops
+    05.report
+
+    """
+    def __init__(self, **kwargs):
+        """Fetch all arguments for goldclip in one step"""
+        self.kwargs = args_init(kwargs)
+
+    ## run
+    def run(self):
+        args = self.kwargs
+
+        ## Trim adapters
+        logging.info('01.Trimming')
+        path_trim = os.path.join(args['path_out'], '01.trimming')
+        ## update arguments
+        args_trim = args.copy()
+        fq1_files = args_trim.pop('fq1', None) # remove 'fq1' from args
+        args_trim['path_out'] = path_trim
+
+        if args['trimmed']:
+            # make links
+            trim_fq_files = fq1_files
+        else:
+            trim_fq_files = []
+            for fq1 in fq1_files:
+                tmp = Trimmer(fq1=fq1, **args_trim).run()
+                trim_fq_files.append(tmp)
+
+        ## Map reads
+        logging.info('02.Alignment')
+        path_map = os.path.join(args['path_out'], '02.genome_mapping')
+        ## update arguments
+        args_map = args.copy()
+        args_map['fqs'] = trim_fq_files
+        args_map['path_out'] = path_map
+        bam_files, _ = Alignment(**args_map).run()
+
+        ## Call peaks
+        logging.info('03.Call Peaks')
+        ## clipper
+        path_peak1 = os.path.join(args['path_out'], '03.call_peaks', 'clipper')
+        peak_files1 = call_peak(args['genome'], bam_files, path_peak1, peak_caller='clipper')
+        
+        ## pyicoclip
+        path_peak2 = os.path.join(args['path_out'], '03.call_peaks', 'pyicoclip')
+        peak_files1 = call_peak(args['genome'], bam_files, path_peak2, peak_caller='pyicoclip')
+
+        ## Call rtstops
+        logging.info('04.Call RT-Stops')
+        path_rtstop = os.path.join(args['path_out'], '04.call_rtstops')
+        bed_files = []
+        # convert bam to bed
+        for bam in bam_files:
+            bed = os.path.splitext(bam)[0] + '.bed'
+            if not os.path.exists(bed):
+                logging.info('convert BAM to BED: %s' % bam)
+                bed = BAM(bam).to_bed()
+            bed_files.append(bed)
+        rtstop_files = call_rtstop(
+            bed_files=bed_files, 
+            path_out=path_rtstop,
+            smp_name=args['smp_name'], 
+            threshold=args['threshold'], 
+            intersect=args['intersect'],
+            overwrite=args['overwrite'])
+
+        ## Report
+        logging.info('05.Generate report')
+        Goldclip_report(
+            project_path=args['path_out'],
+            project_name=args['smp_name'],
+            genome=args['genome'],
+            threads=args['threads']).get_all_figures()
+
 
