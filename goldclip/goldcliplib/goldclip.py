@@ -22,7 +22,7 @@ from goldclip.goldcliplib.report import Goldclip_report
 
 class Trim:
     def __init__(self, **kwargs):
-        self.kwargs = args_init(kwargs)
+        self.kwargs = args_init(kwargs, trim=True)
 
     def run(self):
         logging.info('trimming start')
@@ -48,7 +48,7 @@ class Align:
     specify: fq, path_out, index, parameters, 
     """
     def __init__(self, **kwargs):
-        self.kwargs = args_init(kwargs)
+        self.kwargs = args_init(kwargs, align=True)
 
 
     def run(self):
@@ -61,7 +61,7 @@ class Peak:
     """Call peaks using CLIPper, pyicoclip
     """
     def __init__(self, **kwargs):
-        self.kwargs = args_init(kwargs)
+        self.kwargs = args_init(kwargs, call_peak=True)
 
     def run(self):
         args = self.kwargs
@@ -81,7 +81,7 @@ class Rtstop:
     call RT-stops from BAM files
     """
     def __init__(self, **kwargs):
-        self.kwargs= args_init(kwargs)
+        self.kwargs= args_init(kwargs, call_peak=True)
 
     def run(self):
         args = self.kwargs
@@ -120,7 +120,7 @@ class Report:
     args : g, the reference genome of the project
     """
     def __init__(self, **kwargs):
-        self.kwargs = args_init(kwargs)
+        self.kwargs = args_init(kwargs, demx=True, trim=True, align=True, call_peak=True)
 
     def run(self):
         args = self.kwargs
@@ -138,7 +138,7 @@ class Goldclip_all_in_one(object):
     """
     def __init__(self, **kwargs):
         """Fetch all arguments for goldclip in one step"""
-        self.kwargs = args_init(kwargs)
+        self.kwargs = args_init(kwargs, demx=True, trim=True, align=True, call_peak=True)
 
     ## run
     def run(self):
@@ -146,11 +146,11 @@ class Goldclip_all_in_one(object):
 
         ## Trim adapters
         logging.info('01.Trimming')
-        path_trim = os.path.join(args['path_out'], '01.trimming')
-        ## update arguments
         args_trim = args.copy()
-        fq1_files = args_trim.pop('fq1', None) # remove 'fq1' from args
+        path_trim = os.path.join(args_trim['path_out'], '01.trimming')
+        fq1_files = args_trim.pop('fq1', None) # remove 'fq1'
         args_trim['path_out'] = path_trim
+
 
         if args['trimmed']:
             # make links

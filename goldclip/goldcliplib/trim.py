@@ -82,7 +82,7 @@ class Trimmer(object):
         support both SE and PE reads
         """
         assert isinstance(fq1, str) # process one file
-        args1 = args_init(kwargs) # default parameters
+        args1 = args_init(kwargs, trim=True) # default parameters
         args2 = {
             'fq1': fq1,
             'adapter3': adapter3,
@@ -94,6 +94,10 @@ class Trimmer(object):
         assert is_path(path_out)
         if args['trim_to_length'] > 0 and args['trim_to_length'] < len_min:
             raise ValueError('[fatal] --trim-to-length [%s] shorter than -m [%s]') % (args['trim_to_length'], len_min)
+
+        ## ignore --cut-after-trim
+        if args['library_type'] > 0:
+            args['cut_after_trim'] = '0'
 
         self.kwargs = args # global 
 
@@ -195,13 +199,13 @@ class Trimmer(object):
         ## consider cut-after-trim
         trim_args = self.cut_parser(args['cut_after_trim'], False) # return the numbers
         if len(trim_args) == 2:
-            trim_5, trim_3 = trim_args[:2]
+            cut5, cut3 = trim_args[:2]
         elif len(trim_args) == 1:
-            trim_5 = 0 if(int(trim_args[0]) < 0) else trim_args[0]
-            trim_3 = 0 if(int(trim_args[0]) > 0) else trim_args[0]
+            cut5 = 0 if(int(trim_args[0]) < 0) else trim_args[0]
+            cut3 = 0 if(int(trim_args[0]) > 0) else trim_args[0]
         else:
-            trim_5 = trim_3 = 0
-        len_min = args['len_min'] + abs(trim_5) + abs(trim_3) # minimum lenght
+            cut5 = cut3 = 0
+        len_min = args['len_min'] + abs(cut5) + abs(cut3) # minimum lenght
 
         ## basic command
         cut_basic = '%s -m %s \
@@ -357,7 +361,7 @@ class Trimmer(object):
         return fq_out
 
 
-    def cut_ends(self, fq_in=None, fq_out=None, rm_too_short=True):
+    def cut_ends(self, fq_in=None, fq_out=None, rm_too_short=True, cut5=0, cut3=0):
         """Cut N-bases at either tail of fastq after cutadapt
         Using python to process fastq files
         support SE reads only
@@ -372,16 +376,21 @@ class Trimmer(object):
         if fq_out is None:
             fq_out = os.path.join(path_cut_ends, os.path.basename(fq_in))
 
+        ## parse default cut_after_trim 
         args_cut_ends = self.cut_parser(args['cut_after_trim'], False)
-
         if len(args_cut_ends) == 2:
-            trim_5, trim_3 = args_cut_ends
+            cut1, cut2 = args_cut_ends
         elif len(args_cut_ends) == 1:
-            trim_5 = 0 if(int(args_cut_ends[0]) < 0) else args_cut_ends[0]
-            trim_3 = 0 if(int(args_cut_ends[0]) > 0) else args_cut_ends[0]
+            cut1 = 0 if(int(args_cut_ends[0]) < 0) else args_cut_ends[0]
+            cut2 = 0 if(int(args_cut_ends[0]) > 0) else args_cut_ends[0]
         else:
-            trim_5 = trim_3 = 0
+            cut1 = cut2 = 0
 
+        ## update cut5 and cut3
+        if cut5 == 0 and cut3 == 0:
+            cut5, cut3 = [cut1, cut2]
+
+        ## main step
         with open(fq_in, 'rt') as fi, open(fq_out, 'wt') as ff:
             while True:
                 try:
@@ -389,15 +398,15 @@ class Trimmer(object):
                                                        next(fi).strip(),
                                                        next(fi).strip(),
                                                        next(fi).strip()]
-                    if len(fq_seq) < args['len_min'] + abs(trim_5) + abs(trim_3):
+                    if len(fq_seq) < args['len_min'] + abs(cut5) + abs(cut3):
                         if rm_too_short:
                             continue # skip short reads
                         else:
                             fq_seq = 'A'
                             fq_qual = 'J' # quality
                     else:
-                        fq_seq = fq_seq[trim_5:trim_3] if(trim_3 < 0) else fq_seq[trim_5:]
-                        fq_qual = fq_qual[trim_5:trim_3] if(trim_3 < 0) else fq_qual[trim_5:]
+                        fq_seq = fq_seq[cut5:cut3] if(cut3 < 0) else fq_seq[cut5:]
+                        fq_qual = fq_qual[cut5:cut3] if(cut3 < 0) else fq_qual[cut5:]
                     # trim to length
                     if args['trim_to_length'] > args['len_min']:
                         n_right = min([args['trim_to_length'], len(fq_seq)])
@@ -439,6 +448,174 @@ class Trimmer(object):
                 except StopIteration:
                     break
         return fq_out
+
+
+    def run_clip_nsr(self):
+        """Run cutadapt for CLIP reads
+
+        General process
+        1. cut N-bases before trimming (optional)
+        2. trim 3' adapter
+        3. cut N-bases before collapsing (optional)
+        4. remove PCR duplicates
+        5. cut randomer after rm-dup
+        """
+        logging.info('Trimming reads: SE mode')
+        # args = self.kwargs.copy()
+        args = self.kwargs # a copy of kwargs
+
+        fq_prefix, fq_clean, fq_log, fq_untrim = self.trim_init()
+        fq_in = args['fq1']
+
+        ## 1. cut N-bases before trim
+        ## 2. trim 3' adapter
+        fq_out = self.trim_se() #
+        print('AAAA')
+        print(args)
+
+        ## 4. cut N-bases after trim
+        args['cut_after_trim'] = '7,-7'
+        fq_tmp1 = fq_in + '.before_cut_after_trim.tmp'
+        os.rename(fq_clean, fq_tmp1)
+        fq_clean = self.cut_ends(fq_in=fq_tmp1, fq_out=fq_clean)
+        os.remove(fq_tmp1)
+        print('BBBB')
+        print(args)
+
+        ## 3. remove PCR dup
+        if args['rm_dup']:
+            fq_tmp2 = fq_in + '.before_rmdup.tmp'
+            os.rename(fq_clean, fq_tmp2)
+            fq_clean = self.rm_duplicate(fq_in=fq_tmp2, fq_out=fq_clean)
+            os.remove(fq_tmp2)
+        print('CCCC')
+        print(args)
+
+        ## 5. cut to specific length
+        if args['trim_to_length'] > args['len_min']:
+            fq_tmp3 = fq_in + '.before_trim_to_length.tmp'
+            os.rename(fq_clean, fq_tmp3)
+            fq_clean = self.cut_ends2(fq_in=fq_tmp3, fq_out=fq_clean)
+            os.remove(fq_tmp3)
+        print('DDDD')
+        print(args)
+
+        return fq_clean
+
+
+    def run_clip_eclip(self):
+        """Run cutadapt for CLIP reads, eCLIP, Yulab version
+        read1: 10nt--insert--7nt
+        read2: 7nt--insert--10nt
+
+        General process
+        1. cut N-bases before trimming (optional)
+        2. trim 3' adapter
+        3. cut N-bases before collapsing (optional)
+        4. remove PCR duplicates
+        5. cut randomer after rm-dup
+        """
+        logging.info('Trimming reads: SE mode')
+        # args = self.kwargs.copy()
+        args = self.kwargs # a copy of kwargs
+
+        fq_prefix, fq_clean, fq_log, fq_untrim = self.trim_init()
+        fq_in = args['fq1']
+
+        ## 1. cut N-bases before trim
+        ## 2. trim 3' adapter
+        fq_out = self.trim_se() #
+        print('AAAA')
+        print(args)
+
+        ## 3. cut N-bases before collapsing
+        args['cut_after_trim'] = '-7'
+        fq_tmp1 = fq_in + '.before_collapse_after_trim.tmp'
+        os.rename(fq_clean, fq_tmp1)
+        fq_clean = self.cut_ends(fq_in=fq_tmp1, fq_out=fq_clean)
+        os.remove(fq_tmp1)
+        print('BBBB')
+        print(args)
+
+        ## 4. remove PCR dup
+        if args['rm_dup']:
+            fq_tmp2 = fq_in + '.before_rmdup.tmp'
+            os.rename(fq_clean, fq_tmp2)
+            fq_clean = self.rm_duplicate(fq_in=fq_tmp2, fq_out=fq_clean)
+            os.remove(fq_tmp2)
+        print('CCCC')
+        print(args)
+
+        ## 5. cut N-bases after trim
+        args['cut_after_trim'] = '10'
+        fq_tmp3 = fq_in + '.before_cut_after_trim.tmp'
+        os.rename(fq_clean, fq_tmp3)
+        fq_clean = self.cut_ends(fq_in=fq_tmp3, fq_out=fq_clean)
+        os.remove(fq_tmp3)
+        print('DDDD')
+        print(args)
+
+        ## 6. cut to specific length
+        if args['trim_to_length'] > args['len_min']:
+            fq_tmp3 = fq_in + '.before_trim_to_length.tmp'
+            os.rename(fq_clean, fq_tmp3)
+            fq_clean = self.cut_ends2(fq_in=fq_tmp3, fq_out=fq_clean)
+            os.remove(fq_tmp3)
+
+        return fq_clean
+
+
+    def run_clip_iclip(self):
+        """Run cutadapt for CLIP reads, iCLIP, Yulab version
+        read1: 9nt--insert
+        read2: insert--10nt
+
+        General process
+        1. cut N-bases before trimming (optional)
+        2. trim 3' adapter
+        3. cut N-bases before collapsing (optional)
+        4. remove PCR duplicates
+        5. cut randomer after rm-dup
+        """
+        logging.info('Trimming reads: SE mode')
+        # args = self.kwargs.copy()
+        args = self.kwargs # a copy of kwargs
+
+        fq_prefix, fq_clean, fq_log, fq_untrim = self.trim_init()
+        fq_in = args['fq1']
+
+        ## 1. cut N-bases before trim
+        ## 2. trim 3' adapter
+        fq_out = self.trim_se() #
+        print('AAAA')
+        print(args)
+
+        ## 3. remove PCR dup
+        if args['rm_dup']:
+            fq_tmp2 = fq_in + '.before_rmdup.tmp'
+            os.rename(fq_clean, fq_tmp2)
+            fq_clean = self.rm_duplicate(fq_in=fq_tmp2, fq_out=fq_clean)
+            os.remove(fq_tmp2)
+        print('BBBB')
+        print(args)
+
+        ## 4. cut N-bases after trim
+        args['cut_after_trim'] = '9'
+        fq_tmp3 = fq_in + '.before_cut_after_trim.tmp'
+        os.rename(fq_clean, fq_tmp3)
+        fq_clean = self.cut_ends(fq_in=fq_tmp3, fq_out=fq_clean)
+        os.remove(fq_tmp3)
+        print('CCCC')
+        print(args)
+
+        ## 6. cut to specific length
+        if args['trim_to_length'] > args['len_min']:
+            fq_tmp3 = fq_in + '.before_trim_to_length.tmp'
+            os.rename(fq_clean, fq_tmp3)
+            fq_clean = self.cut_ends2(fq_in=fq_tmp3, fq_out=fq_clean)
+            os.remove(fq_tmp3)
+
+        return fq_clean
 
 
     def run_se(self):
@@ -523,30 +700,42 @@ class Trimmer(object):
 
     def run(self):
         """Run trimming for all"""
-        args = self.kwargs.copy()
+        args = self.kwargs
         fq_prefix = file_prefix(args['fq1'])[0]
 
-        ## save arguments
-        args_file = os.path.join(args['path_out'], fq_prefix + '.arguments.txt')
-        args_pickle = os.path.join(args['path_out'], fq_prefix + '.arguments.pickle')
-        if args_checker(args, args_pickle) and args['overwrite'] is False:
-            logging.info('files exists, arguments not changed, trimming skipped - %s' % fq_prefix)
-            return True #!!! fastq files
-        else:
-            args_logger(args, args_file, True) # update arguments.txt
-
-        ## SE mode
-        if args['fq2'] is None:
-            fq_return = self.run_se()
+        ## library-type {1, 2, 3}
+        library_type = args['library_type']
+        if library_type == 1: # NSR
+            fq_return = self.run_clip_nsr()
             fq1_clean = fq_return
-
-        ## PE mode
-        elif os.path.exists(args['fq2']):
-            fq_return = self.run_pe()
-            fq1_clean = fq_return[0]
-
+        elif library_type == 2: # eCLIP
+            fq_return = self.run_clip_eclip()
+            fq1_clean = fq_return
+        elif library_type == 3: # iCLIP
+            fq_return = self.run_clip_iclip()
+            fq1_clean = fq_return
         else:
-            raise Exception('Illegal --fq2 argument: %s' % args['fq2'])
+            ## save arguments
+            args_file = os.path.join(args['path_out'], fq_prefix + '.arguments.txt')
+            args_pickle = os.path.join(args['path_out'], fq_prefix + '.arguments.pickle')
+            if args_checker(args, args_pickle) and args['overwrite'] is False:
+                logging.info('files exists, arguments not changed, trimming skipped - %s' % fq_prefix)
+                return True #!!! fastq files
+            else:
+                args_logger(args, args_file, True) # update arguments.txt
+
+            ## SE mode
+            if args['fq2'] is None:
+                fq_return = self.run_se()
+                fq1_clean = fq_return
+
+            ## PE mode
+            elif os.path.exists(args['fq2']):
+                fq_return = self.run_pe()
+                fq1_clean = fq_return[0]
+
+            else:
+                raise Exception('Illegal --fq2 argument: %s' % args['fq2'])
 
         ## save read count
         fq_prefix = file_prefix(args['fq1'])[0]

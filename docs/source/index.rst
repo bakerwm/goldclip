@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to demo's documentation!
-================================
+GoldCLIP documentation
+======================
 
 This package demostrate the sub-commands for command line in ``Python``.
 
