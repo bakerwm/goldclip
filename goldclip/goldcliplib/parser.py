@@ -35,7 +35,16 @@ def add_trim_args(parser):
         type=int, help='Minimum length of reads after trimming, defualt [15]')
     parser.add_argument('--read12', type=int, default=1,
         help='which one of PE reads, 1=read1, 2=read2, default: 1')
-    
+
+    parser.add_argument('--library-type', dest='library_type', default=0,
+        type=int, choices=[1, 2, 3],
+        help='Type of the library structure, 1=NSR, 2=eCLIP, 3=iCLIP,\
+        determine the way to trim the raw reads, default: [0],\
+        NSR: trim 7-nt at both 3 and 5 ends of read\
+        eCLIP: trim 10-nt at 5 end, 7-nt at 3 end, (read1 of PE reads, Yulab version)\
+        iCLIP: trim 9-nt at 5 end \
+        default: 0, ignore --cut-after-trim')
+
     ## global arguments    
     parser.add_argument('-q', '--qual-min', default=20, type=int,
         dest='qual_min',
